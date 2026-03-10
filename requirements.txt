@@ -1,0 +1,6 @@
+Java 17+
+Spring Boot
+MySQL 8+
+Maven
+Postman
+Git
