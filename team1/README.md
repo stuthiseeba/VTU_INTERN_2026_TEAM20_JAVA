@@ -107,7 +107,3 @@ src/main/java/com/internship/authsystem/
 ├── service/         # Business logic
 └── exception/       # Error handling
 ```
-
-## License
-
-Internship Project - Team 1
