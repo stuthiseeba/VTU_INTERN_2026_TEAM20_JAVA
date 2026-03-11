@@ -1,6 +1,199 @@
-Java 17+
-Spring Boot
-MySQL 8+
-Maven
-Postman
-Git
+================================================================
+RECRUITMENT DRIVE MANAGEMENT SYSTEM
+VTU Internship 2026 — Team 20
+System Requirements & Dependencies
+Integration: Team 1 + Team 2 + Team 3
+================================================================
+
+----------------------------------------------------------------
+SYSTEM REQUIREMENTS
+----------------------------------------------------------------
+
+Operating System:
+  Windows 10/11 (64-bit) — recommended
+  macOS 12+ or Ubuntu 20.04+ also supported
+
+RAM:           Minimum 8GB (16GB recommended)
+Disk Space:    Minimum 5GB free
+Internet:      Required for Maven and npm dependency downloads
+
+----------------------------------------------------------------
+BACKEND — REQUIRED SOFTWARE
+----------------------------------------------------------------
+
+1. Java Development Kit (JDK)
+   Version:   21 or higher
+   Download:  https://www.oracle.com/java/technologies/downloads/
+   Verify:    java -version
+
+2. Apache Maven
+   Version:   3.8 or higher
+   Download:  https://maven.apache.org/download.cgi
+   Verify:    mvn -version
+   Note:      Eclipse includes Maven — standalone install optional
+
+3. MySQL Server
+   Version:   8.0 or higher
+   Download:  https://dev.mysql.com/downloads/mysql/
+   Verify:    mysql --version
+   Setup:     Create database: CREATE DATABASE recruitment_system;
+
+4. MySQL Workbench (optional but recommended)
+   Version:   8.0+
+   Download:  https://dev.mysql.com/downloads/workbench/
+
+5. Eclipse IDE for Enterprise Java
+   Version:   2023-06 or higher
+   Download:  https://www.eclipse.org/downloads/
+   Package:   Eclipse IDE for Enterprise Java and Web Developers
+
+6. Postman (for API testing)
+   Version:   Latest
+   Download:  https://www.postman.com/downloads/
+
+7. Git
+   Version:   Latest
+   Download:  https://git-scm.com/downloads
+   Verify:    git --version
+
+----------------------------------------------------------------
+FRONTEND — REQUIRED SOFTWARE (Team 3)
+----------------------------------------------------------------
+
+1. Node.js
+   Version:   18.0 or higher (LTS recommended)
+   Download:  https://nodejs.org/en/download
+   Verify:    node --version
+
+2. npm (comes with Node.js)
+   Version:   9.0 or higher
+   Verify:    npm --version
+
+----------------------------------------------------------------
+BACKEND — MAVEN DEPENDENCIES (pom.xml)
+----------------------------------------------------------------
+
+Spring Boot Parent:         3.3.5
+Spring Boot Web:            included in parent
+Spring Boot Data JPA:       included in parent
+Spring Boot Security:       included in parent
+Spring Boot DevTools:       included in parent
+MySQL Connector/J:          included in parent
+JWT (jjwt-api):             0.12.5
+JWT (jjwt-impl):            0.12.5
+JWT (jjwt-jackson):         0.12.5
+Lombok:                     included in parent (optional)
+
+All dependencies are auto-downloaded by Maven on first build.
+
+----------------------------------------------------------------
+FRONTEND — NPM DEPENDENCIES (package.json)
+----------------------------------------------------------------
+
+react:                      19.x
+react-dom:                  19.x
+react-router-dom:           7.x
+axios:                      1.x
+
+Dev Dependencies:
+vite:                       7.x
+@vitejs/plugin-react:       5.x
+eslint:                     9.x
+
+Install all with:  npm install
+
+----------------------------------------------------------------
+DATABASE SETUP
+----------------------------------------------------------------
+
+Step 1 — Start MySQL service
+
+Step 2 — Open MySQL Workbench or Command Prompt and run:
+  CREATE DATABASE recruitment_system;
+
+Step 3 — Tables are created automatically by Hibernate on
+         first run (spring.jpa.hibernate.ddl-auto=update)
+
+Tables created automatically:
+  - users         (Team 1 — Auth)
+  - drive         (Team 2 — Recruitment, with eligibility fields)
+  - student       (Team 2 — with graduationYear and skills)
+  - application   (Team 2 — Application workflow)
+
+Step 4 — Optional: load sample data
+  USE recruitment_system;
+
+  SET SQL_SAFE_UPDATES = 0;
+
+  INSERT INTO student (name, email, cgpa, branch, graduation_year, skills) VALUES
+  ('John Doe',     'john@college.edu',  8.5, 'CSE',  2026, 'Java,SQL,Python'),
+  ('Jane Smith',   'jane@college.edu',  9.1, 'ISE',  2026, 'Java,SQL,React'),
+  ('Ravi Kumar',   'ravi@college.edu',  7.2, 'ECE',  2026, 'C,Python'),
+  ('Priya Sharma', 'priya@college.edu', 8.9, 'CSE',  2026, 'Java,SQL,Spring'),
+  ('Arjun Nair',   'arjun@college.edu', 6.8, 'MECH', 2026, 'AutoCAD');
+
+  INSERT INTO drive (company_name, role, package_amount, location, min_cgpa, eligible_branches, graduation_year, required_skills) VALUES
+  ('Google',    'SDE',               25.5, 'Bangalore', 8.0, 'CSE,ISE',          2026, 'Java,SQL'),
+  ('Microsoft', 'Software Engineer', 22.0, 'Hyderabad', 7.5, 'CSE,ISE,ECE',      2026, 'Java'),
+  ('Infosys',   'Systems Engineer',   6.5, 'Pune',      6.0, 'CSE,ISE,ECE,MECH', 2026, 'C');
+
+  SET SQL_SAFE_UPDATES = 1;
+
+----------------------------------------------------------------
+QUICK START COMMANDS
+----------------------------------------------------------------
+
+Backend (Eclipse):
+  1. Import project as Maven project
+  2. Update Maven (force update)
+  3. Right-click PlacementSystemApplication.java
+     → Run As → Java Application
+  4. Verify: Tomcat started on port 8080
+
+Backend (Command Line):
+  cd C:\Users\eknat\VTU_INTERN_2026_TEAM20_JAVA
+  mvn clean install
+  mvn spring-boot:run
+
+Frontend:
+  cd PAT\pat-ui
+  npm install
+  npm run dev
+  Open: http://localhost:5173
+
+Export database snapshot:
+  cd "C:\Program Files\MySQL\MySQL Server 8.0\bin"
+  mysqldump -u root -p recruitment_system > snapshot.sql
+
+Import database snapshot:
+  mysql -u root -p recruitment_system < snapshot.sql
+
+----------------------------------------------------------------
+GITHUB REPOSITORY
+----------------------------------------------------------------
+
+Repository:  https://github.com/stuthiseeba/VTU_INTERN_2026_TEAM20_JAVA
+
+Branches:
+  main                          ← original base
+  integration-auth-team2        ← Team 1 + Team 2 integration
+  integration-team1-team2-team3 ← Full integration with frontend
+
+Push updates:
+  git add .
+  git commit -m "your message"
+  git push
+
+----------------------------------------------------------------
+ENVIRONMENT PORTS
+----------------------------------------------------------------
+
+Spring Boot Backend:   http://localhost:8080
+React Frontend:        http://localhost:5173
+MySQL:                 localhost:3306
+Vite Proxy:            /api, /drives, /applications, /students
+                       → forwarded to port 8080 automatically
+
+================================================================
+END OF REQUIREMENTS
+================================================================
