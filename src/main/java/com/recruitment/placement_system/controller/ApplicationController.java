@@ -30,7 +30,6 @@ public class ApplicationController {
             @PathVariable int id,
             @RequestParam String stage,
             @RequestParam String status) {
-
         return service.updateStage(id, stage, status);
     }
 }

@@ -11,49 +11,23 @@ public class Application {
 
     private int studentId;
     private int driveId;
-
     private String stage;
     private String status;
 
     public Application() {}
 
-    public int getApplicationId() {
-        return applicationId;
-    }
+    public int getApplicationId() { return applicationId; }
+    public void setApplicationId(int applicationId) { this.applicationId = applicationId; }
 
-    public void setApplicationId(int applicationId) {
-        this.applicationId = applicationId;
-    }
+    public int getStudentId() { return studentId; }
+    public void setStudentId(int studentId) { this.studentId = studentId; }
 
-    public int getStudentId() {
-        return studentId;
-    }
+    public int getDriveId() { return driveId; }
+    public void setDriveId(int driveId) { this.driveId = driveId; }
 
-    public void setStudentId(int studentId) {
-        this.studentId = studentId;
-    }
+    public String getStage() { return stage; }
+    public void setStage(String stage) { this.stage = stage; }
 
-    public int getDriveId() {
-        return driveId;
-    }
-
-    public void setDriveId(int driveId) {
-        this.driveId = driveId;
-    }
-
-    public String getStage() {
-        return stage;
-    }
-
-    public void setStage(String stage) {
-        this.stage = stage;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }

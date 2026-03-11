@@ -16,43 +16,18 @@ public class Student {
 
     public Student() {}
 
-    public int getStudentId() {
-        return studentId;
-    }
+    public int getStudentId() { return studentId; }
+    public void setStudentId(int studentId) { this.studentId = studentId; }
 
-    public void setStudentId(int studentId) {
-        this.studentId = studentId;
-    }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
 
-    public String getName() {
-        return name;
-    }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
 
-    public void setName(String name) {
-        this.name = name;
-    }
+    public float getCgpa() { return cgpa; }
+    public void setCgpa(float cgpa) { this.cgpa = cgpa; }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public float getCgpa() {
-        return cgpa;
-    }
-
-    public void setCgpa(float cgpa) {
-        this.cgpa = cgpa;
-    }
-
-    public String getBranch() {
-        return branch;
-    }
-
-    public void setBranch(String branch) {
-        this.branch = branch;
-    }
+    public String getBranch() { return branch; }
+    public void setBranch(String branch) { this.branch = branch; }
 }

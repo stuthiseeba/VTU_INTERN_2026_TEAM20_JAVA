@@ -15,10 +15,8 @@ public class ApplicationService {
     private ApplicationRepository repository;
 
     public Application apply(Application application) {
-
         application.setStage("Applied");
         application.setStatus("Pending");
-
         return repository.save(application);
     }
 
@@ -27,12 +25,10 @@ public class ApplicationService {
     }
 
     public Application updateStage(int id, String stage, String status) {
-
-        Application app = repository.findById(id).get();
-
+        Application app = repository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Application not found with id: " + id));
         app.setStage(stage);
         app.setStatus(status);
-
         return repository.save(app);
     }
 }

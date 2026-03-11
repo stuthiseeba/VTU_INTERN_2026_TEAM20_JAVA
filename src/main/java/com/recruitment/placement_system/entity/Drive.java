@@ -16,43 +16,18 @@ public class Drive {
 
     public Drive() {}
 
-    public int getDriveId() {
-        return driveId;
-    }
+    public int getDriveId() { return driveId; }
+    public void setDriveId(int driveId) { this.driveId = driveId; }
 
-    public void setDriveId(int driveId) {
-        this.driveId = driveId;
-    }
+    public String getCompanyName() { return companyName; }
+    public void setCompanyName(String companyName) { this.companyName = companyName; }
 
-    public String getCompanyName() {
-        return companyName;
-    }
+    public String getRole() { return role; }
+    public void setRole(String role) { this.role = role; }
 
-    public void setCompanyName(String companyName) {
-        this.companyName = companyName;
-    }
+    public double getPackageAmount() { return packageAmount; }
+    public void setPackageAmount(double packageAmount) { this.packageAmount = packageAmount; }
 
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public double getPackageAmount() {
-        return packageAmount;
-    }
-
-    public void setPackageAmount(double packageAmount) {
-        this.packageAmount = packageAmount;
-    }
-
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
+    public String getLocation() { return location; }
+    public void setLocation(String location) { this.location = location; }
 }
