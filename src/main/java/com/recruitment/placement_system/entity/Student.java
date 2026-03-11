@@ -14,6 +14,10 @@ public class Student {
     private float cgpa;
     private String branch;
 
+    // ✅ NEW: Added for Eligibility Engine
+    private int graduationYear;
+    private String skills; // comma-separated e.g. "Java,Python,SQL"
+
     public Student() {}
 
     public int getStudentId() { return studentId; }
@@ -30,4 +34,10 @@ public class Student {
 
     public String getBranch() { return branch; }
     public void setBranch(String branch) { this.branch = branch; }
+
+    public int getGraduationYear() { return graduationYear; }
+    public void setGraduationYear(int graduationYear) { this.graduationYear = graduationYear; }
+
+    public String getSkills() { return skills; }
+    public void setSkills(String skills) { this.skills = skills; }
 }
