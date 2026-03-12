@@ -1,0 +1,19 @@
+Node.js
+npm
+MySQL
+
+Backend Dependencies
+express
+cors
+dotenv
+bcrypt
+jsonwebtoken
+mysql2
+nodemailer
+
+Frontend Dependencies
+react
+react-dom
+vite
+axios
+react-router-dom

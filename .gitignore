@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+node_modules/ 
+PAT/identity-service/node_modules/ 
+PAT/pat-ui/node_modules/ 
