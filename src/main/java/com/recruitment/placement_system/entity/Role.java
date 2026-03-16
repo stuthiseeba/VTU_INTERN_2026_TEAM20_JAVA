@@ -4,5 +4,7 @@ public enum Role {
     STUDENT,
     ADMIN,
     RECRUITER,
-    HR
+    HR,
+    COORDINATOR,  // ✅ Added for Team 3 integration
+    TPO           // ✅ Added for Team 3 integration
 }

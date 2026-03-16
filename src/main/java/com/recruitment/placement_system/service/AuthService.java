@@ -1,22 +1,23 @@
 package com.recruitment.placement_system.service;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
-
 import com.recruitment.placement_system.dto.ApiResponse;
-import com.recruitment.placement_system.dto.AuthResponse;
-import com.recruitment.placement_system.dto.ForgotPasswordRequest;
 import com.recruitment.placement_system.dto.LoginRequest;
+import com.recruitment.placement_system.dto.ForgotPasswordRequest;
 import com.recruitment.placement_system.dto.ResetPasswordRequest;
 import com.recruitment.placement_system.dto.SignupRequest;
-// ✅ FIXED: This import was missing — User was used throughout but never imported
 import com.recruitment.placement_system.entity.User;
 import com.recruitment.placement_system.repository.UserRepository;
 import com.recruitment.placement_system.security.JwtUtil;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -25,110 +26,116 @@ public class AuthService {
     private UserRepository userRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    private BCryptPasswordEncoder passwordEncoder;
 
     @Autowired
     private JwtUtil jwtUtil;
 
-    public AuthResponse signup(SignupRequest request) {
-        if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already exists");
+    // ── Signup ────────────────────────────────────────────────────────────────
+    public ResponseEntity<?> signup(SignupRequest request) {
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity.status(409)
+                .body(new ApiResponse(false, "Email already registered"));
         }
 
         User user = new User();
+        user.setFullName(request.getFullName());
         user.setEmail(request.getEmail());
         user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setFullName(request.getFullName());
         user.setPhoneNumber(request.getPhoneNumber());
+
+        // ✅ FIXED: getRole() already returns Role enum — no toUpperCase() needed
         user.setRole(request.getRole());
+
         user.setIsVerified(false);
         user.setIsActive(true);
-
-        User savedUser = userRepository.save(user);
-
-        String token = jwtUtil.generateToken(
-            savedUser.getEmail(),
-            savedUser.getId(),
-            savedUser.getRole().name()
-        );
-
-        return new AuthResponse(
-            token,
-            savedUser.getId(),
-            savedUser.getEmail(),
-            savedUser.getFullName(),
-            savedUser.getRole(),
-            savedUser.getIsVerified()
-        );
-    }
-
-    public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new RuntimeException("Invalid email or password"));
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid email or password");
-        }
-
-        if (!user.getIsActive()) {
-            throw new RuntimeException("Account is deactivated");
-        }
-
-        String token = jwtUtil.generateToken(
-            user.getEmail(),
-            user.getId(),
-            user.getRole().name()
-        );
-
-        return new AuthResponse(
-            token,
-            user.getId(),
-            user.getEmail(),
-            user.getFullName(),
-            user.getRole(),
-            user.getIsVerified()
-        );
-    }
-
-    public ApiResponse forgotPassword(ForgotPasswordRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new RuntimeException("User not found with this email"));
-
-        String resetToken = UUID.randomUUID().toString();
-        user.setResetToken(resetToken);
-        user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
+        // ✅ FIXED: removed setCreatedAt/setUpdatedAt — Hibernate handles these
+        // automatically via @CreationTimestamp and @UpdateTimestamp on User entity
 
         userRepository.save(user);
-
-        // In production, send email with reset token
-        // For now, returning token in response for testing only
-        return new ApiResponse(true, "Password reset token generated: " + resetToken);
+        return ResponseEntity.ok(new ApiResponse(true, "User registered successfully"));
     }
 
-    public ApiResponse resetPassword(ResetPasswordRequest request) {
-        User user = userRepository.findByResetToken(request.getToken())
-            .orElseThrow(() -> new RuntimeException("Invalid reset token"));
+    // ── Login ─────────────────────────────────────────────────────────────────
+    public ResponseEntity<?> login(LoginRequest request) {
+        Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
 
+        if (userOpt.isEmpty() ||
+            !passwordEncoder.matches(request.getPassword(), userOpt.get().getPassword())) {
+            return ResponseEntity.status(401)
+                .body(new ApiResponse(false, "Invalid email or password"));
+        }
+
+        User user = userOpt.get();
+
+        // ✅ generateToken(String email, Long userId, String role)
+        String token = jwtUtil.generateToken(
+            user.getEmail(),
+            user.getId(),
+            user.getRole().toString()
+        );
+
+        // Combined response for Team 1/2 (token) and Team 3 (userId, name)
+        Map<String, Object> response = new HashMap<>();
+        response.put("token",      token);
+        response.put("userId",     user.getId().toString());
+        response.put("name",       user.getFullName());
+        response.put("fullName",   user.getFullName());
+        response.put("email",      user.getEmail());
+        response.put("role",       user.getRole().toString());
+        response.put("isVerified", user.getIsVerified());
+        response.put("isActive",   user.getIsActive());
+        response.put("message",    "Login successful");
+
+        return ResponseEntity.ok(response);
+    }
+
+    // ── Forgot Password ───────────────────────────────────────────────────────
+    public ResponseEntity<?> forgotPassword(ForgotPasswordRequest request) {
+        Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(404)
+                .body(new ApiResponse(false, "Email not found"));
+        }
+
+        String token = UUID.randomUUID().toString();
+        User user = userOpt.get();
+        user.setResetToken(token);
+        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15));
+        userRepository.save(user);
+
+        return ResponseEntity.ok(
+            new ApiResponse(true, "Password reset token generated: " + token));
+    }
+
+    // ── Reset Password ────────────────────────────────────────────────────────
+    public ResponseEntity<?> resetPassword(ResetPasswordRequest request) {
+        Optional<User> userOpt = userRepository.findByResetToken(request.getToken());
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(400)
+                .body(new ApiResponse(false, "Invalid or expired reset token"));
+        }
+
+        User user = userOpt.get();
         if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Reset token has expired");
+            return ResponseEntity.status(400)
+                .body(new ApiResponse(false, "Reset token has expired"));
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         user.setResetToken(null);
         user.setResetTokenExpiry(null);
-
         userRepository.save(user);
 
-        return new ApiResponse(true, "Password reset successfully");
+        return ResponseEntity.ok(new ApiResponse(true, "Password reset successfully"));
     }
-
     public ApiResponse verifyProfile(Long userId) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found"));
+            .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
 
         user.setIsVerified(true);
         userRepository.save(user);
 
-        return new ApiResponse(true, "Profile verified successfully");
+        return new ApiResponse(true, "User profile verified successfully");
     }
 }

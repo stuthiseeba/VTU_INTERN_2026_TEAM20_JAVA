@@ -1,4 +1,5 @@
 package com.recruitment.placement_system.controller;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
