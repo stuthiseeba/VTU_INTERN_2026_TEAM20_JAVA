@@ -1,7 +1,7 @@
 ================================================================
-RECRUITMENT DRIVE MANAGEMENT SYSTEM
-VTU Internship 2026 — Team 20
+PLACEMENT AUTOMATION TOOL
 System Requirements & Dependencies
+VTU Internship 2026 — Team 20
 Integration: Team 1 + Team 2 + Team 3
 ================================================================
 
@@ -9,13 +9,11 @@ Integration: Team 1 + Team 2 + Team 3
 SYSTEM REQUIREMENTS
 ----------------------------------------------------------------
 
-Operating System:
-  Windows 10/11 (64-bit) — recommended
-  macOS 12+ or Ubuntu 20.04+ also supported
-
-RAM:           Minimum 8GB (16GB recommended)
-Disk Space:    Minimum 5GB free
-Internet:      Required for Maven and npm dependency downloads
+Operating System:  Windows 10/11 (64-bit) — recommended
+                   macOS 12+ or Ubuntu 20.04+ also supported
+RAM:               Minimum 8GB (16GB recommended)
+Disk Space:        Minimum 5GB free
+Internet:          Required for Maven and npm dependency downloads
 
 ----------------------------------------------------------------
 BACKEND — REQUIRED SOFTWARE
@@ -36,7 +34,6 @@ BACKEND — REQUIRED SOFTWARE
    Version:   8.0 or higher
    Download:  https://dev.mysql.com/downloads/mysql/
    Verify:    mysql --version
-   Setup:     Create database: CREATE DATABASE recruitment_system;
 
 4. MySQL Workbench (optional but recommended)
    Version:   8.0+
@@ -73,16 +70,18 @@ FRONTEND — REQUIRED SOFTWARE (Team 3)
 BACKEND — MAVEN DEPENDENCIES (pom.xml)
 ----------------------------------------------------------------
 
-Spring Boot Parent:         3.3.5
-Spring Boot Web:            included in parent
-Spring Boot Data JPA:       included in parent
-Spring Boot Security:       included in parent
-Spring Boot DevTools:       included in parent
-MySQL Connector/J:          included in parent
-JWT (jjwt-api):             0.12.5
-JWT (jjwt-impl):            0.12.5
-JWT (jjwt-jackson):         0.12.5
-Lombok:                     included in parent (optional)
+Spring Boot Parent:                3.3.5
+spring-boot-starter-web:           via parent  (REST API, embedded Tomcat)
+spring-boot-starter-data-jpa:      via parent  (Hibernate ORM)
+spring-boot-starter-security:      via parent  (Auth & JWT filter)
+spring-boot-starter-mail:          via parent  (Gmail SMTP for OTP emails)
+spring-boot-starter-validation:    via parent  (@NotBlank, @Email on DTOs)
+spring-boot-devtools:              via parent  (Hot reload)
+mysql-connector-j:                 via parent  (MySQL JDBC driver)
+jjwt-api:                          0.12.5
+jjwt-impl:                         0.12.5
+jjwt-jackson:                      0.12.5
+lombok:                            via parent  (optional)
 
 All dependencies are auto-downloaded by Maven on first build.
 
@@ -90,17 +89,23 @@ All dependencies are auto-downloaded by Maven on first build.
 FRONTEND — NPM DEPENDENCIES (package.json)
 ----------------------------------------------------------------
 
-react:                      19.x
-react-dom:                  19.x
-react-router-dom:           7.x
-axios:                      1.x
+Production Dependencies:
+  react:                      ^19.2.4
+  react-dom:                  ^19.2.4
+  react-router-dom:           ^6.30.0   ← added during integration
 
 Dev Dependencies:
-vite:                       7.x
-@vitejs/plugin-react:       5.x
-eslint:                     9.x
+  vite:                       ^8.0.0
+  @vitejs/plugin-react:       ^6.0.0
+  eslint:                     ^9.39.4
+  eslint-plugin-react-hooks:  ^7.0.1
+  eslint-plugin-react-refresh: ^0.5.2
 
 Install all with:  npm install
+
+NOTE: react-router-dom was added during Team 3 integration.
+Always run "npm install" after pulling from GitHub to pick up
+any new dependencies.
 
 ----------------------------------------------------------------
 DATABASE SETUP
@@ -108,21 +113,31 @@ DATABASE SETUP
 
 Step 1 — Start MySQL service
 
-Step 2 — Open MySQL Workbench or Command Prompt and run:
+Step 2 — Create the database:
   CREATE DATABASE recruitment_system;
 
 Step 3 — Tables are created automatically by Hibernate on
          first run (spring.jpa.hibernate.ddl-auto=update)
 
-Tables created automatically:
-  - users         (Team 1 — Auth)
-  - drive         (Team 2 — Recruitment, with eligibility fields)
-  - student       (Team 2 — with graduationYear and skills)
-  - application   (Team 2 — Application workflow)
+  Tables created automatically:
+    users         Team 1 — email, password, role, OTP, verification status
+    drive         Team 2 — company, eligibility criteria, rounds
+    student       Team 2 — CGPA, branch, skills, graduation year
+    application   Team 2 — stage and status workflow
 
-Step 4 — Optional: load sample data
+Step 4 — Fix role column (run ONCE after first launch):
+
+  If you see error: "Data truncated for column 'role' at row 1"
+  Run this in MySQL Workbench:
+
+    ALTER TABLE users MODIFY COLUMN role VARCHAR(20) NOT NULL;
+
+  Why: MySQL created the column before COORDINATOR and TPO were
+  added to the Role enum. Hibernate's ddl-auto=update does not
+  alter existing column types automatically.
+
+Step 5 — Optional: load sample data
   USE recruitment_system;
-
   SET SQL_SAFE_UPDATES = 0;
 
   INSERT INTO student (name, email, cgpa, branch, graduation_year, skills) VALUES
@@ -143,12 +158,12 @@ Step 4 — Optional: load sample data
 QUICK START COMMANDS
 ----------------------------------------------------------------
 
-Backend (Eclipse):
+Backend (Eclipse — recommended):
   1. Import project as Maven project
-  2. Update Maven (force update)
+  2. Right-click pom.xml → Maven → Force Update
   3. Right-click PlacementSystemApplication.java
      → Run As → Java Application
-  4. Verify: Tomcat started on port 8080
+  4. Verify console: Tomcat started on port 8080
 
 Backend (Command Line):
   cd C:\Users\eknat\VTU_INTERN_2026_TEAM20_JAVA
@@ -156,17 +171,55 @@ Backend (Command Line):
   mvn spring-boot:run
 
 Frontend:
-  cd PAT\pat-ui
+  cd C:\Users\eknat\VTU_INTERN_2026_TEAM20_JAVA\PAT
   npm install
   npm run dev
   Open: http://localhost:5173
 
-Export database snapshot:
+  ⚠ NOTE: Folder is PAT — NOT PAT\pat-ui
+
+Database backup:
   cd "C:\Program Files\MySQL\MySQL Server 8.0\bin"
   mysqldump -u root -p recruitment_system > snapshot.sql
 
-Import database snapshot:
+Database restore:
   mysql -u root -p recruitment_system < snapshot.sql
+
+----------------------------------------------------------------
+FRONTEND — PAGES & URLS (React Router)
+----------------------------------------------------------------
+
+  http://localhost:5173/             Home page         (public)
+  http://localhost:5173/login        Login             (public)
+  http://localhost:5173/signup       Sign Up           (public)
+  http://localhost:5173/student      Student Dashboard (login required)
+  http://localhost:5173/tpo          TPO Dashboard     (login required)
+  http://localhost:5173/coordinator  Coordinator       (login required)
+  http://localhost:5173/info/:key    Info pages        (public)
+
+  NOTE: Navigating to a protected URL without logging in
+  automatically redirects to /login.
+
+----------------------------------------------------------------
+FRONTEND — FEATURES ADDED DURING INTEGRATION
+----------------------------------------------------------------
+
+1. React Router (react-router-dom ^6.30.0)
+   - URL-based navigation instead of state-based page switching
+   - Protected routes — redirect to /login if not authenticated
+   - Login state persists across page refreshes (localStorage)
+
+2. Dark / Light Theme Toggle
+   - Floating button (bottom-right corner) on every page
+   - Light: warm grey (#F4F0EC background, white cards)
+   - Dark:  charcoal grey (#1A1A1A background, #242424 cards)
+   - Theme preference saved to localStorage
+
+3. Signup OTP Flow
+   - Step 1: Fill form (fullName, email, password, role)
+   - Step 2: Enter 6-digit OTP sent to email
+   - OTP valid for 5 minutes — Resend OTP available
+   - If email not configured: OTP printed to Eclipse console
 
 ----------------------------------------------------------------
 GITHUB REPOSITORY
@@ -175,24 +228,38 @@ GITHUB REPOSITORY
 Repository:  https://github.com/stuthiseeba/VTU_INTERN_2026_TEAM20_JAVA
 
 Branches:
-  main                          ← original base
-  integration-auth-team2        ← Team 1 + Team 2 integration
-  integration-team1-team2-team3 ← Full integration with frontend
+  main                            original base
+  integration-auth-team2          Team 1 + Team 2
+  integration-team1-team2-team3   Full integration (ACTIVE)
 
-Push updates:
-  git add .
-  git commit -m "your message"
-  git push
+Push updates to the integration branch:
+  cd C:\Users\eknat\VTU_INTERN_2026_TEAM20_JAVA
+  git checkout integration-team1-team2-team3
+  git pull origin integration-team1-team2-team3   ← always pull first
+  git add PAT/src/App.jsx PAT/src/App.css PAT/package.json
+  git commit -m "your message here"
+  git push origin integration-team1-team2-team3
+
+After pulling from GitHub — reinstall frontend dependencies:
+  cd PAT
+  npm install
 
 ----------------------------------------------------------------
-ENVIRONMENT PORTS
+ENVIRONMENT PORTS & PROXY
 ----------------------------------------------------------------
 
 Spring Boot Backend:   http://localhost:8080
 React Frontend:        http://localhost:5173
 MySQL:                 localhost:3306
-Vite Proxy:            /api, /drives, /applications, /students
-                       → forwarded to port 8080 automatically
+
+Vite Proxy (configured in PAT/vite.config.js):
+  /api/**              → http://localhost:8080  (Team 1 Auth)
+  /drives/**           → http://localhost:8080  (Team 2 Drives)
+  /applications/**     → http://localhost:8080  (Team 2 Applications)
+  /students/**         → http://localhost:8080  (Team 2 Students)
+
+All API calls from frontend are forwarded to port 8080
+automatically — no CORS configuration needed.
 
 ================================================================
 END OF REQUIREMENTS
