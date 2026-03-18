@@ -57,7 +57,7 @@ export default function TpoDashboard({ user, onLogout }) {
           <div className="s-role">TPO</div>
         </div>
         <div className="dash-nav">
-          {[['tpo-overview','🏠','Overview'],['tpo-create-drive','➕','Create Drive'],['tpo-all-drives','📋','All Drives'],['tpo-funnel','🔀','Drive Funnel']].map(([id,icon,label]) => (
+          {[['tpo-overview','🏠','Overview'],['tpo-create-drive','➕','Create Drive'],['tpo-all-drives','📋','All Drives'],['tpo-funnel','🔀','Drive Funnel'],['tpo-applicants','👥','Student Applications']].map(([id,icon,label]) => (
             <a key={id} className={tab===id?'active':''} onClick={()=>setTab(id)}><span className="nav-icon">{icon}</span> {label}</a>
           ))}
         </div>
@@ -138,7 +138,115 @@ export default function TpoDashboard({ user, onLogout }) {
         {tab === 'tpo-funnel' && funnelIdx === null && (
           <div className="empty-state"><div className="e-icon">🔀</div><p>Select a drive from All Drives to manage its funnel.</p></div>
         )}
+
+        {tab === 'tpo-applicants' && <StudentApplications tpoUserId={user.userId} />}
       </div>
+    </div>
+  );
+}
+
+function StudentApplications({ tpoUserId }) {
+  const [drives, setDrives] = useState([]);
+  const [selectedDrive, setSelectedDrive] = useState(null);
+  const [applicants, setApplicants] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetch(`http://localhost:8080/api/tpo/drives/${tpoUserId}`)
+      .then(r => r.json())
+      .then(data => setDrives(data))
+      .catch(() => {});
+  }, [tpoUserId]);
+
+  async function viewApplicants(drive) {
+    setSelectedDrive(drive);
+    setLoading(true);
+    try {
+      const res = await fetch(`http://localhost:8080/api/tpo/drive/${drive.id}/applicants`);
+      const data = await res.json();
+      setApplicants(data);
+    } catch { setApplicants([]); }
+    setLoading(false);
+  }
+
+  async function deleteApplicant(applicant) {
+    if (!window.confirm(`Delete application of "${applicant.studentName}"? This will remove it from both TPO and student records.`)) return;
+    try {
+      const res = await fetch(`http://localhost:8080/api/tpo/drive/applicant/${applicant.id}`, { method: 'DELETE' });
+      if (res.ok) {
+        const data = await res.json();
+        // Remove from local state
+        setApplicants(prev => prev.filter(a => a.id !== applicant.id));
+        // Remove from student's localStorage (search all keys)
+        const driveId = parseInt(data.driveId);
+        const email = data.studentEmail;
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && key.startsWith('applied_drives_')) {
+            const apps = JSON.parse(localStorage.getItem(key) || '[]');
+            const filtered = apps.filter(a => !(a.driveId === driveId));
+            if (filtered.length !== apps.length) {
+              localStorage.setItem(key, JSON.stringify(filtered));
+            }
+          }
+        }
+      }
+    } catch { alert('Failed to delete application.'); }
+  }
+
+  if (selectedDrive) {
+    return (
+      <div>
+        <div className="dash-topbar">
+          <div>
+            <h1>{selectedDrive.company}{selectedDrive.role ? ' — ' + selectedDrive.role : ''}</h1>
+            <p>Students who applied for this drive</p>
+          </div>
+          <button className="action-btn btn-view" style={{ padding:'10px 20px', fontSize:13 }} onClick={() => setSelectedDrive(null)}>← Back to Drives</button>
+        </div>
+        {loading
+          ? <div className="profile-card"><p style={{color:'#888'}}>Loading...</p></div>
+          : applicants.length === 0
+            ? <div className="empty-state"><div className="e-icon">👥</div><p>No students have applied for this drive yet.</p></div>
+            : <div className="profile-card">
+                <h3>Applicants ({applicants.length})</h3>
+                <table className="coord-table" style={{marginTop:12}}>
+                  <thead><tr><th>#</th><th>Student Name</th><th>Email</th><th>Status</th><th>Action</th></tr></thead>
+                  <tbody>
+                    {applicants.map((s, i) => (
+                      <tr key={s.id}>
+                        <td>{i + 1}</td>
+                        <td style={{fontWeight:600}}>{s.studentName}</td>
+                        <td>{s.studentEmail || '-'}</td>
+                        <td><span className="badge badge-verified">{s.status}</span></td>
+                        <td><button className="action-btn btn-delete" onClick={() => deleteApplicant(s)}>Delete</button></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+        }
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="dash-topbar"><div><h1>Student Applications</h1><p>See which students applied for each drive</p></div></div>
+      {drives.length === 0
+        ? <div className="empty-state"><div className="e-icon">📋</div><p>No drives created yet.</p></div>
+        : drives.map((d, i) => (
+          <div className="content-item" key={d.id || i} style={{ flexDirection:'column', gap:10 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', width:'100%' }}>
+              <div>
+                <h4 style={{ fontSize:16, fontWeight:800, color:'#2d1a0e' }}>{d.company}{d.role ? ' — ' + d.role : ''}</h4>
+                <p style={{ fontSize:13, color:'#888', marginTop:4 }}>📅 {d.driveDate || d.date}{d.venue ? '  📍 ' + d.venue : ''}</p>
+              </div>
+              <button className="action-btn btn-view" onClick={() => viewApplicants(d)}>View Applicants</button>
+            </div>
+          </div>
+        ))
+      }
     </div>
   );
 }

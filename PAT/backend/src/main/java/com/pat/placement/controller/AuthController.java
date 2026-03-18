@@ -73,7 +73,8 @@ public class AuthController {
                 "message", "Login successful",
                 "role", user.getRole().toString(),
                 "name", user.getName() != null ? user.getName() : "",
-                "userId", user.getId().toString()
+                "userId", user.getId().toString(),
+                "email", user.getEmail()
             ));
         } else {
             return ResponseEntity.status(401).body(Map.of("message", "Invalid email or password"));

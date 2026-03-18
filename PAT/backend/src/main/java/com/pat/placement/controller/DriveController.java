@@ -40,6 +40,11 @@ public class DriveController {
         return ResponseEntity.ok(driveRepository.findByTpoUserId(tpoUserId));
     }
 
+    @GetMapping("/drives")
+    public ResponseEntity<?> getAllDrives() {
+        return ResponseEntity.ok(driveRepository.findAll());
+    }
+
     @DeleteMapping("/drive/{driveId}")
     public ResponseEntity<?> deleteDrive(@PathVariable Long driveId) {
         driveRepository.deleteById(driveId);
@@ -88,5 +93,45 @@ public class DriveController {
     @GetMapping("/drive/{driveId}/students")
     public ResponseEntity<?> getStudents(@PathVariable Long driveId) {
         return ResponseEntity.ok(driveStudentRepository.findByDriveId(driveId));
+    }
+
+    // Student self-applies for a drive (status = "Applied", roundIndex = 0)
+    @PostMapping("/drive/apply")
+    public ResponseEntity<?> applyForDrive(@RequestBody Map<String, String> body) {
+        Long driveId = Long.parseLong(body.get("driveId"));
+        // Prevent duplicate applications by same email
+        List<DriveStudent> existing = driveStudentRepository.findByDriveIdAndStatus(driveId, "Applied");
+        boolean alreadyApplied = existing.stream()
+            .anyMatch(s -> body.get("studentEmail") != null && body.get("studentEmail").equalsIgnoreCase(s.getStudentEmail()));
+        if (alreadyApplied) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Already applied"));
+        }
+        DriveStudent s = new DriveStudent();
+        s.setDriveId(driveId);
+        s.setStudentName(body.get("studentName"));
+        s.setStudentEmail(body.get("studentEmail"));
+        s.setRoundIndex(0);
+        s.setStatus("Applied");
+        DriveStudent saved = driveStudentRepository.save(s);
+        return ResponseEntity.ok(Map.of("message", "Application submitted", "applicationId", saved.getId().toString()));
+    }
+
+    // TPO views all students who self-applied for a specific drive
+    @GetMapping("/drive/{driveId}/applicants")
+    public ResponseEntity<?> getApplicants(@PathVariable Long driveId) {
+        return ResponseEntity.ok(driveStudentRepository.findByDriveIdAndStatus(driveId, "Applied"));
+    }
+
+    // TPO deletes a student application (roundIndex = -1 self-applied)
+    @DeleteMapping("/drive/applicant/{applicationId}")
+    public ResponseEntity<?> deleteApplicant(@PathVariable Long applicationId) {
+        return driveStudentRepository.findById(applicationId).map(s -> {
+            driveStudentRepository.delete(s);
+            return ResponseEntity.ok(Map.of(
+                "message", "Application deleted",
+                "driveId", s.getDriveId().toString(),
+                "studentEmail", s.getStudentEmail() != null ? s.getStudentEmail() : ""
+            ));
+        }).orElse(ResponseEntity.notFound().build());
     }
 }

@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface DriveStudentRepository extends JpaRepository<DriveStudent, Long> {
     List<DriveStudent> findByDriveId(Long driveId);
+    List<DriveStudent> findByDriveIdAndRoundIndex(Long driveId, int roundIndex);
+    List<DriveStudent> findByDriveIdAndStatus(Long driveId, String status);
 }
