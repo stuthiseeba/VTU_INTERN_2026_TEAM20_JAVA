@@ -37,8 +37,11 @@ public class User {
     private Boolean isActive = true;
 
     private String resetToken;
-
     private LocalDateTime resetTokenExpiry;
+
+    // ✅ NEW: OTP fields for email verification
+    private String otp;
+    private LocalDateTime otpExpiry;
 
     @CreationTimestamp
     @Column(updatable = false)
@@ -79,6 +82,13 @@ public class User {
 
     public LocalDateTime getResetTokenExpiry() { return resetTokenExpiry; }
     public void setResetTokenExpiry(LocalDateTime resetTokenExpiry) { this.resetTokenExpiry = resetTokenExpiry; }
+
+    // ✅ NEW: OTP getters/setters
+    public String getOtp() { return otp; }
+    public void setOtp(String otp) { this.otp = otp; }
+
+    public LocalDateTime getOtpExpiry() { return otpExpiry; }
+    public void setOtpExpiry(LocalDateTime otpExpiry) { this.otpExpiry = otpExpiry; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public LocalDateTime getUpdatedAt() { return updatedAt; }

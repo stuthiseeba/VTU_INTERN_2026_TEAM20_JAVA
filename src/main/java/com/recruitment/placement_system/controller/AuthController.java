@@ -1,20 +1,21 @@
 package com.recruitment.placement_system.controller;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
 import com.recruitment.placement_system.dto.ApiResponse;
+import com.recruitment.placement_system.dto.AuthResponse;
 import com.recruitment.placement_system.dto.ForgotPasswordRequest;
 import com.recruitment.placement_system.dto.LoginRequest;
 import com.recruitment.placement_system.dto.ResetPasswordRequest;
 import com.recruitment.placement_system.dto.SignupRequest;
-import com.recruitment.placement_system.entity.Role;
-import com.recruitment.placement_system.repository.UserRepository;
 import com.recruitment.placement_system.service.AuthService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import jakarta.validation.Valid;
+
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -24,73 +25,90 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    // ── Team 1: Signup ────────────────────────────────────────────────────────
+    // ── Signup → sends OTP to email ───────────────────────────────────────────
     @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody SignupRequest request) {
-        return authService.signup(request);
-    }
-
-    // ✅ Team 3: /register alias — sends { name, email, password, role }
-    @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody Map<String, String> body) {
-        SignupRequest request = new SignupRequest();
-        // Team 3 sends "name" — map to fullName
-        String name = body.get("name") != null ? body.get("name") : body.getOrDefault("fullName", "");
-        request.setFullName(name);
-        request.setEmail(body.get("email"));
-        request.setPassword(body.get("password"));
-        request.setPhoneNumber(body.getOrDefault("phoneNumber", ""));
-
-        // ✅ FIXED: convert String role to Role enum
-        String roleStr = body.getOrDefault("role", "STUDENT").toUpperCase();
+    public ResponseEntity<?> signup(@Valid @RequestBody SignupRequest request) {
         try {
-            request.setRole(Role.valueOf(roleStr));
-        } catch (IllegalArgumentException e) {
-            request.setRole(Role.STUDENT);
+            ApiResponse response = authService.signup(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse(false, e.getMessage()));
         }
-
-        return authService.signup(request);
     }
 
-    // ── Team 1: Login ─────────────────────────────────────────────────────────
+    // ✅ NEW: Verify OTP — activates account
+    // POST /api/auth/verify-otp
+    // Body: { "email": "user@example.com", "otp": "123456" }
+    @PostMapping("/verify-otp")
+    public ResponseEntity<?> verifyOtp(@RequestBody Map<String, String> body) {
+        try {
+            String email = body.get("email");
+            String otp   = body.get("otp");
+            if (email == null || otp == null) {
+                return ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, "Email and OTP are required"));
+            }
+            ApiResponse response = authService.verifyOtp(email, otp);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse(false, e.getMessage()));
+        }
+    }
+
+    // ✅ NEW: Resend OTP
+    // POST /api/auth/resend-otp
+    // Body: { "email": "user@example.com" }
+    @PostMapping("/resend-otp")
+    public ResponseEntity<?> resendOtp(@RequestBody Map<String, String> body) {
+        try {
+            String email = body.get("email");
+            if (email == null) {
+                return ResponseEntity.badRequest()
+                    .body(new ApiResponse(false, "Email is required"));
+            }
+            ApiResponse response = authService.resendOtp(email);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse(false, e.getMessage()));
+        }
+    }
+
+    // ── Login ─────────────────────────────────────────────────────────────────
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
-        return authService.login(request);
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
+        try {
+            AuthResponse response = authService.login(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ApiResponse(false, e.getMessage()));
+        }
     }
 
-    // ── Team 1: Forgot Password ───────────────────────────────────────────────
+    // ── Forgot Password ───────────────────────────────────────────────────────
     @PostMapping("/forgot-password")
-    public ResponseEntity<?> forgotPassword(@RequestBody ForgotPasswordRequest request) {
-        return authService.forgotPassword(request);
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        try {
+            ApiResponse response = authService.forgotPassword(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse(false, e.getMessage()));
+        }
     }
 
-    // ── Team 1: Reset Password ────────────────────────────────────────────────
+    // ── Reset Password ────────────────────────────────────────────────────────
     @PostMapping("/reset-password")
-    public ResponseEntity<?> resetPassword(@RequestBody ResetPasswordRequest request) {
-        return authService.resetPassword(request);
-    }
-
-    // ✅ Team 3: Get all students
-    @GetMapping("/students")
-    public ResponseEntity<?> getAllStudents() {
-        List<Map<String, String>> students = userRepository.findAll().stream()
-            .filter(u -> u.getRole() == Role.STUDENT)
-            .map(u -> Map.of(
-                "id",    u.getId().toString(),
-                "name",  u.getFullName() != null ? u.getFullName() : "",
-                "email", u.getEmail()
-            ))
-            .collect(Collectors.toList());
-        return ResponseEntity.ok(students);
-    }
-
-    // ✅ Team 3: Delete student
-    @DeleteMapping("/students/{id}")
-    public ResponseEntity<?> deleteStudent(@PathVariable Long id) {
-        userRepository.deleteById(id);
-        return ResponseEntity.ok(new ApiResponse(true, "Student deleted"));
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        try {
+            ApiResponse response = authService.resetPassword(request);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ApiResponse(false, e.getMessage()));
+        }
     }
 }

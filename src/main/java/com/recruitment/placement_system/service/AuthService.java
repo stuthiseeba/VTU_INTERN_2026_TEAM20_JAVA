@@ -1,23 +1,22 @@
 package com.recruitment.placement_system.service;
 
+import java.time.LocalDateTime;
+import java.util.Random;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import com.recruitment.placement_system.dto.ApiResponse;
-import com.recruitment.placement_system.dto.LoginRequest;
+import com.recruitment.placement_system.dto.AuthResponse;
 import com.recruitment.placement_system.dto.ForgotPasswordRequest;
+import com.recruitment.placement_system.dto.LoginRequest;
 import com.recruitment.placement_system.dto.ResetPasswordRequest;
 import com.recruitment.placement_system.dto.SignupRequest;
 import com.recruitment.placement_system.entity.User;
 import com.recruitment.placement_system.repository.UserRepository;
 import com.recruitment.placement_system.security.JwtUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -26,100 +25,162 @@ public class AuthService {
     private UserRepository userRepository;
 
     @Autowired
-    private BCryptPasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private JwtUtil jwtUtil;
 
-    // ── Signup ────────────────────────────────────────────────────────────────
-    public ResponseEntity<?> signup(SignupRequest request) {
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
-            return ResponseEntity.status(409)
-                .body(new ApiResponse(false, "Email already registered"));
-        }
+    @Autowired
+    private EmailService emailService;
 
-        User user = new User();
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setPhoneNumber(request.getPhoneNumber());
-
-        // ✅ FIXED: getRole() already returns Role enum — no toUpperCase() needed
-        user.setRole(request.getRole());
-
-        user.setIsVerified(false);
-        user.setIsActive(true);
-        // ✅ FIXED: removed setCreatedAt/setUpdatedAt — Hibernate handles these
-        // automatically via @CreationTimestamp and @UpdateTimestamp on User entity
-
-        userRepository.save(user);
-        return ResponseEntity.ok(new ApiResponse(true, "User registered successfully"));
+    // ── Generate 6-digit OTP ──────────────────────────────────────────────────
+    private String generateOtp() {
+        return String.format("%06d", new Random().nextInt(999999));
     }
 
-    // ── Login ─────────────────────────────────────────────────────────────────
-    public ResponseEntity<?> login(LoginRequest request) {
-        Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
+    // ── Signup — saves user as inactive and sends OTP ─────────────────────────
+    public ApiResponse signup(SignupRequest request) {
+    	if (userRepository.existsByEmail(request.getEmail())) {
+    	    User existing = userRepository.findByEmail(request.getEmail()).get();
+    	    if (existing.getIsVerified()) {
+    	        throw new RuntimeException("Email already registered. Please login.");
+    	    }
+    	    // Unverified — just resend OTP and update details
+    	    String otp = generateOtp();
+    	    existing.setOtp(otp);
+    	    existing.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+    	    userRepository.save(existing);
+    	    emailService.sendOtpEmail(request.getEmail(), otp, existing.getFullName());
+    	    return new ApiResponse(true, "OTP:" + otp);
+    	}
 
-        if (userOpt.isEmpty() ||
-            !passwordEncoder.matches(request.getPassword(), userOpt.get().getPassword())) {
-            return ResponseEntity.status(401)
-                .body(new ApiResponse(false, "Invalid email or password"));
+        String otp = generateOtp();
+
+        User user = new User();
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setFullName(request.getFullName());
+        user.setPhoneNumber(request.getPhoneNumber());
+        user.setRole(request.getRole());
+        user.setIsVerified(false);  // ← not verified until OTP confirmed
+        user.setIsActive(false);    // ← not active until OTP confirmed
+        user.setOtp(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+
+        userRepository.save(user);
+
+        // Send OTP email (prints to console if email fails)
+        emailService.sendOtpEmail(request.getEmail(), otp, request.getFullName());
+
+        return new ApiResponse(true,
+            "Registration successful! OTP sent to " + request.getEmail() +
+            ". Please verify your email to activate your account.");
+    }
+
+    // ── Verify OTP — activates account ───────────────────────────────────────
+    public ApiResponse verifyOtp(String email, String otp) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getIsVerified()) {
+            return new ApiResponse(true, "Account already verified. Please login.");
         }
 
-        User user = userOpt.get();
+        if (user.getOtp() == null || !user.getOtp().equals(otp)) {
+            throw new RuntimeException("Invalid OTP");
+        }
 
-        // ✅ generateToken(String email, Long userId, String role)
+        if (user.getOtpExpiry() == null || user.getOtpExpiry().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("OTP has expired. Please request a new one.");
+        }
+
+        // Activate account
+        user.setIsVerified(true);
+        user.setIsActive(true);
+        user.setOtp(null);
+        user.setOtpExpiry(null);
+        userRepository.save(user);
+
+        // Send welcome email
+        emailService.sendWelcomeEmail(email, user.getFullName());
+
+        return new ApiResponse(true, "Email verified successfully! You can now login.");
+    }
+
+    // ── Resend OTP ────────────────────────────────────────────────────────────
+    public ApiResponse resendOtp(String email) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("User not found"));
+
+        if (user.getIsVerified()) {
+            return new ApiResponse(true, "Account already verified. Please login.");
+        }
+
+        String otp = generateOtp();
+        user.setOtp(otp);
+        user.setOtpExpiry(LocalDateTime.now().plusMinutes(5));
+        userRepository.save(user);
+
+        emailService.sendOtpEmail(email, otp, user.getFullName());
+
+        return new ApiResponse(true, "New OTP sent to " + email);
+    }
+
+    // ── Login — only allows verified and active accounts ──────────────────────
+    public AuthResponse login(LoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new RuntimeException("Invalid email or password"));
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid email or password");
+        }
+
+        // ✅ Block login if not verified
+        if (!user.getIsVerified()) {
+            throw new RuntimeException(
+                "Account not verified. Please check your email for the OTP.");
+        }
+
+        if (!user.getIsActive()) {
+            throw new RuntimeException("Account is deactivated");
+        }
+
         String token = jwtUtil.generateToken(
             user.getEmail(),
             user.getId(),
-            user.getRole().toString()
+            user.getRole().name()
         );
 
-        // Combined response for Team 1/2 (token) and Team 3 (userId, name)
-        Map<String, Object> response = new HashMap<>();
-        response.put("token",      token);
-        response.put("userId",     user.getId().toString());
-        response.put("name",       user.getFullName());
-        response.put("fullName",   user.getFullName());
-        response.put("email",      user.getEmail());
-        response.put("role",       user.getRole().toString());
-        response.put("isVerified", user.getIsVerified());
-        response.put("isActive",   user.getIsActive());
-        response.put("message",    "Login successful");
-
-        return ResponseEntity.ok(response);
+        return new AuthResponse(
+            token,
+            user.getId(),
+            user.getEmail(),
+            user.getFullName(),
+            user.getRole(),
+            user.getIsVerified()
+        );
     }
 
     // ── Forgot Password ───────────────────────────────────────────────────────
-    public ResponseEntity<?> forgotPassword(ForgotPasswordRequest request) {
-        Optional<User> userOpt = userRepository.findByEmail(request.getEmail());
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.status(404)
-                .body(new ApiResponse(false, "Email not found"));
-        }
+    public ApiResponse forgotPassword(ForgotPasswordRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+            .orElseThrow(() -> new RuntimeException("User not found with this email"));
 
-        String token = UUID.randomUUID().toString();
-        User user = userOpt.get();
-        user.setResetToken(token);
-        user.setResetTokenExpiry(LocalDateTime.now().plusMinutes(15));
+        String resetToken = UUID.randomUUID().toString();
+        user.setResetToken(resetToken);
+        user.setResetTokenExpiry(LocalDateTime.now().plusHours(1));
         userRepository.save(user);
 
-        return ResponseEntity.ok(
-            new ApiResponse(true, "Password reset token generated: " + token));
+        return new ApiResponse(true, "Password reset token generated: " + resetToken);
     }
 
     // ── Reset Password ────────────────────────────────────────────────────────
-    public ResponseEntity<?> resetPassword(ResetPasswordRequest request) {
-        Optional<User> userOpt = userRepository.findByResetToken(request.getToken());
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.status(400)
-                .body(new ApiResponse(false, "Invalid or expired reset token"));
-        }
+    public ApiResponse resetPassword(ResetPasswordRequest request) {
+        User user = userRepository.findByResetToken(request.getToken())
+            .orElseThrow(() -> new RuntimeException("Invalid reset token"));
 
-        User user = userOpt.get();
         if (user.getResetTokenExpiry().isBefore(LocalDateTime.now())) {
-            return ResponseEntity.status(400)
-                .body(new ApiResponse(false, "Reset token has expired"));
+            throw new RuntimeException("Reset token has expired");
         }
 
         user.setPassword(passwordEncoder.encode(request.getNewPassword()));
@@ -127,15 +188,17 @@ public class AuthService {
         user.setResetTokenExpiry(null);
         userRepository.save(user);
 
-        return ResponseEntity.ok(new ApiResponse(true, "Password reset successfully"));
+        return new ApiResponse(true, "Password reset successfully");
     }
+
+    // ── Verify Profile (Admin) ────────────────────────────────────────────────
     public ApiResponse verifyProfile(Long userId) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+            .orElseThrow(() -> new RuntimeException("User not found"));
 
         user.setIsVerified(true);
         userRepository.save(user);
 
-        return new ApiResponse(true, "User profile verified successfully");
+        return new ApiResponse(true, "Profile verified successfully");
     }
 }

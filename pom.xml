@@ -43,10 +43,16 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
 
-        <!-- Validation — required for @Valid, @NotBlank, @Email etc. -->
+        <!-- Validation -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- ✅ Spring Mail — for OTP emails via Gmail SMTP -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
         </dependency>
 
         <!-- MySQL Driver -->
@@ -56,7 +62,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Lombok — @Data, @AllArgsConstructor, @NoArgsConstructor etc. -->
+        <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -86,7 +92,7 @@
             <scope>runtime</scope>
         </dependency>
 
-        <!-- DevTools — hot reload during development -->
+        <!-- DevTools -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-devtools</artifactId>
@@ -106,7 +112,6 @@
     <build>
         <plugins>
 
-            <!-- Compiler plugin — needed for Lombok annotation processing -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -120,7 +125,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Spring Boot Maven plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>

@@ -123,6 +123,7 @@ PAT/
 |--------|----------|-------------|
 | POST | `/register` | Register a new user |
 | POST | `/login` | Login and get role + userId |
+| POST | `/forgot-password` | Reset password for a user |
 | GET | `/students` | Get all students |
 | DELETE | `/students/{id}` | Delete a student |
 
