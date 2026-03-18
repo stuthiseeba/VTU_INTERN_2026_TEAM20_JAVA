@@ -24,13 +24,14 @@ A complete backend REST API system for managing campus recruitment drives, stude
 
 The Recruitment Drive Management System is a Spring Boot backend application integrated with a React frontend that enables:
 
-- Secure user registration and login via JWT tokens (Team 1)
+- Secure user registration with **OTP-based email verification** and login via JWT tokens (Team 1)
 - Creation, updating, and deletion of recruitment drives (Team 2)
 - Eligibility Engine — filters students based on CGPA, branch, graduation year, and skills (Team 2)
 - Student application workflow with stage tracking (Team 2)
 - Conversion Ratio Metrics — applicants vs selected, round-wise percentages (Team 2)
-- React frontend dashboard showing drives, applications, and user profile (Team 3)
-- Role-based access control: STUDENT, ADMIN, RECRUITER, HR
+- React frontend with **React Router** — dedicated URLs per page (Team 3)
+- **Dark / Light theme toggle** — charcoal grey dark mode, persisted across sessions (Team 3)
+- Role-based access control: STUDENT, COORDINATOR, TPO, ADMIN, HR
 
 ---
 
@@ -38,9 +39,9 @@ The Recruitment Drive Management System is a Spring Boot backend application int
 
 | Team | Module | Responsibility |
 |------|--------|---------------|
-| Team 1 | Authentication Module | Signup, Login, JWT, Password Reset, User Profile |
+| Team 1 | Authentication Module | Signup with OTP verification, Login, JWT, Password Reset, User Profile |
 | Team 2 | Recruitment & Application | Drives CRUD, Eligibility Engine, Application Workflow, Stage Tracking, Conversion Metrics |
-| Team 3 | Frontend & Analytics | React Dashboard, Drive Display, Application Display |
+| Team 3 | Frontend & Analytics | React Dashboard, React Router, Theme Toggle, Drive Display, Application Display |
 
 ---
 
@@ -55,6 +56,7 @@ The Recruitment Drive Management System is a Spring Boot backend application int
 | ORM | Spring Data JPA + Hibernate 6 |
 | Database | MySQL 8+ |
 | Build Tool | Maven |
+| Email | Spring Mail + Gmail SMTP (OTP delivery) |
 | API Testing | Postman |
 | IDE | Eclipse |
 
@@ -62,9 +64,9 @@ The Recruitment Drive Management System is a Spring Boot backend application int
 | Layer | Technology |
 |-------|-----------|
 | Framework | React 19 (Vite) |
-| HTTP Client | Axios |
-| Routing | React Router DOM v7 |
-| Styling | Custom CSS |
+| Routing | React Router DOM v6 |
+| HTTP Client | Fetch API via Vite proxy |
+| Styling | Custom CSS with CSS variables (light/dark themes) |
 
 ---
 
@@ -73,7 +75,7 @@ The Recruitment Drive Management System is a Spring Boot backend application int
 ```
 Browser (React - port 5173)
         │
-        ▼ HTTP via Vite Proxy
+        ▼ HTTP via Vite Proxy (/api → 8080)
 ┌─────────────────────────────┐
 │      Controller Layer       │
 │  AuthController   (Team 1)  │
@@ -85,7 +87,8 @@ Browser (React - port 5173)
              │
 ┌────────────▼────────────────┐
 │       Service Layer         │
-│  AuthService      (Team 1)  │
+│  AuthService      (Team 1)  │  ← OTP generation + email
+│  EmailService     (Team 1)  │  ← Gmail SMTP
 │  DriveService     (Team 2)  │
 │  ApplicationSvc   (Team 2)  │  ← Eligibility Engine + Metrics
 │  StudentService   (Team 2)  │
@@ -137,7 +140,14 @@ cd VTU_INTERN_2026_TEAM20_JAVA
 CREATE DATABASE recruitment_system;
 ```
 
-**Step 3 — Configure application.properties**
+**Step 3 — Fix role column if needed**
+
+If you get a `Data truncated for column 'role'` error, run this once:
+```sql
+ALTER TABLE users MODIFY COLUMN role VARCHAR(20) NOT NULL;
+```
+
+**Step 4 — Configure application.properties**
 
 Open `src/main/resources/application.properties`:
 ```properties
@@ -153,15 +163,26 @@ jwt.secret=R3cruitmentDriv3ManagementSyst3mVTU2026SecureK3y!
 jwt.expiration=86400000
 
 spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
-```
-> ⚠️ Replace `YOUR_MYSQL_PASSWORD` with your actual MySQL root password.
 
-**Step 4 — Import into Eclipse**
+# Gmail SMTP — for OTP emails (optional but recommended)
+# Generate an App Password at myaccount.google.com/apppasswords
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=YOUR_GMAIL@gmail.com
+spring.mail.password=YOUR_16_CHAR_APP_PASSWORD
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+```
+
+> ⚠️ Replace `YOUR_MYSQL_PASSWORD` with your actual MySQL root password.  
+> ⚠️ If Gmail SMTP is not configured, OTPs are printed to the Eclipse console instead.
+
+**Step 5 — Import into Eclipse**
 1. `File → Import → Maven → Existing Maven Projects`
 2. Browse to project folder → Finish
 3. Right-click project → `Maven → Update Project → Force Update → OK`
 
-**Step 5 — Run**
+**Step 6 — Run**  
 Right-click `PlacementSystemApplication.java` → `Run As → Java Application`
 
 Console should show:
@@ -176,13 +197,15 @@ Started PlacementSystemApplication in X seconds
 
 **Step 1 — Go to frontend folder**
 ```cmd
-cd PAT\pat-ui
+cd PAT
 ```
 
 **Step 2 — Install dependencies**
 ```cmd
 npm install
 ```
+
+> ⚠️ Run `npm install` once after cloning, and again whenever `package.json` changes (e.g. after pulling updates that added `react-router-dom`).
 
 **Step 3 — Run**
 ```cmd
@@ -195,6 +218,33 @@ Open browser: `http://localhost:5173`
 
 ---
 
+### Frontend Pages & URLs
+
+| URL | Page | Access |
+|-----|------|--------|
+| `localhost:5173/` | Home Page | Public |
+| `localhost:5173/login` | Login | Public |
+| `localhost:5173/signup` | Sign Up | Public |
+| `localhost:5173/student` | Student Dashboard | Login required |
+| `localhost:5173/tpo` | TPO Dashboard | Login required |
+| `localhost:5173/coordinator` | Coordinator Dashboard | Login required |
+| `localhost:5173/info/:key` | Info Pages | Public |
+
+> Protected routes redirect to `/login` if not authenticated.  
+> Login session persists across page refreshes via `localStorage`.
+
+---
+
+### Theme Toggle
+
+A 🌙 / ☀️ floating button appears in the bottom-right corner on every page. Click it to switch between:
+- **Light mode** — warm grey (`#f4f0ec`) background, high-contrast cards and borders
+- **Dark mode** — charcoal grey (`#1a1a1a`) background, clean `#242424` cards
+
+Theme preference is saved to `localStorage` and persists across sessions.
+
+---
+
 ## API Reference
 
 ### Team 1 — Authentication APIs
@@ -202,7 +252,9 @@ Open browser: `http://localhost:5173`
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| POST | `/api/auth/signup` | Register new user |
+| POST | `/api/auth/signup` | Register new user, sends OTP to email |
+| POST | `/api/auth/verify-otp` | Verify OTP and activate account |
+| POST | `/api/auth/resend-otp` | Resend OTP to email |
 | POST | `/api/auth/login` | Login and get JWT token |
 | POST | `/api/auth/forgot-password` | Request password reset |
 | POST | `/api/auth/reset-password` | Reset password with token |
@@ -217,13 +269,22 @@ Open browser: `http://localhost:5173`
   "role": "STUDENT"
 }
 ```
-Roles: `STUDENT`, `ADMIN`, `RECRUITER`, `HR`
+Roles: `STUDENT`, `COORDINATOR`, `TPO`, `ADMIN`, `HR`
+
+> ⚠️ Field must be `fullName` (not `name`). Role must be uppercase.
+
+**Signup flow:**
+1. POST `/api/auth/signup` → OTP sent to email (or printed to Eclipse console if email not configured)
+2. POST `/api/auth/verify-otp` with `{ "email": "...", "otp": "123456" }` → account activated
+3. POST `/api/auth/login` → returns JWT token
 
 **Login body:**
 ```json
 { "email": "john@example.com", "password": "123456" }
 ```
 Returns: `{ token, id, email, fullName, role, isVerified }`
+
+> ⚠️ Login is blocked until OTP is verified.
 
 ---
 
@@ -317,8 +378,11 @@ Returns: `{ token, id, email, fullName, role, isVerified }`
 -- Team 1
 users (
   id, email, password, full_name, phone_number,
-  role, is_verified, is_active,
-  reset_token, reset_token_expiry, created_at, updated_at
+  role VARCHAR(20),
+  is_verified, is_active,
+  otp, otp_expiry,
+  reset_token, reset_token_expiry,
+  created_at, updated_at
 )
 
 -- Team 2
@@ -349,22 +413,22 @@ src/main/java/com/recruitment/placement_system/
 ├── controller/
 │   ├── AuthController.java           ← Team 1
 │   ├── UserController.java           ← Team 1
-│   ├── DriveController.java          ← Team 2 (updated)
-│   ├── ApplicationController.java    ← Team 2 (updated)
+│   ├── DriveController.java          ← Team 2
+│   ├── ApplicationController.java    ← Team 2
 │   └── StudentController.java        ← Team 2
 ├── dto/
-│   ├── SignupRequest.java
+│   ├── SignupRequest.java            ← fullName, phoneNumber, role
 │   ├── LoginRequest.java
 │   ├── AuthResponse.java
 │   ├── ApiResponse.java
 │   ├── ForgotPasswordRequest.java
 │   ├── ResetPasswordRequest.java
-│   └── ConversionMetrics.java        ← Team 2 (new)
+│   └── ConversionMetrics.java        ← Team 2
 ├── entity/
-│   ├── User.java
-│   ├── Role.java
-│   ├── Drive.java                    ← Team 2 (updated: eligibility fields)
-│   ├── Student.java                  ← Team 2 (updated: graduationYear, skills)
+│   ├── User.java                     ← includes otp, otpExpiry fields
+│   ├── Role.java                     ← STUDENT, COORDINATOR, TPO, ADMIN, HR
+│   ├── Drive.java                    ← includes eligibility fields
+│   ├── Student.java                  ← includes graduationYear, skills
 │   └── Application.java
 ├── exception/
 │   └── GlobalExceptionHandler.java
@@ -372,24 +436,28 @@ src/main/java/com/recruitment/placement_system/
 │   ├── UserRepository.java
 │   ├── DriveRepository.java
 │   ├── StudentRepository.java
-│   └── ApplicationRepository.java   ← Team 2 (updated: findByDriveId)
+│   └── ApplicationRepository.java
 ├── security/
 │   ├── JwtUtil.java
 │   └── JwtAuthenticationFilter.java
 └── service/
-    ├── AuthService.java              ← Team 1
-    ├── DriveService.java             ← Team 2 (updated: update/delete)
-    ├── ApplicationService.java       ← Team 2 (updated: eligibility + metrics)
+    ├── AuthService.java              ← OTP generation + email verification
+    ├── EmailService.java             ← Gmail SMTP OTP delivery
+    ├── DriveService.java             ← Team 2
+    ├── ApplicationService.java       ← Eligibility Engine + Metrics
     └── StudentService.java
 
-Frontend — PAT/pat-ui/src/
-├── api.js                            ← Axios with JWT interceptor
-├── App.jsx                           ← Routes
-├── App.css                           ← Styles
+Frontend — PAT/src/
+├── App.jsx                           ← React Router + theme toggle + localStorage auth
+├── App.css                           ← CSS variables (light/dark themes)
 └── pages/
-    ├── Login.jsx                     ← Team 1 integration
-    ├── Register.jsx                  ← Team 1 integration
-    └── Dashboard.jsx                 ← Team 2 + Team 3 integration
+    ├── HomePage.jsx
+    ├── LoginPage.jsx                 ← JWT login
+    ├── SignupPage.jsx                ← OTP signup flow
+    ├── InfoPage.jsx
+    ├── StudentDashboard.jsx          ← Team 3
+    ├── TpoDashboard.jsx              ← Team 3
+    └── CoordinatorDashboard.jsx      ← Team 3
 ```
 
 ---
@@ -408,8 +476,14 @@ Frontend — PAT/pat-ui/src/
 | 8 | `Student.java` | Missing graduationYear and skills | Added both fields |
 | 9 | `ApplicationService.java` | No eligibility check on apply | Added full eligibility engine |
 | 10 | `ConversionMetrics.java` | File name case mismatch in Eclipse | Renamed to correct PascalCase |
-| 11 | `api.js` | Frontend pointed to Node.js port 5001 | Updated to use Vite proxy → port 8080 |
-| 12 | `Register.jsx` | Wrong field names and role values | Fixed fullName, phoneNumber, STUDENT/ADMIN roles |
+| 11 | `SignupPage.jsx` | Called `/api/auth/register` — endpoint doesn't exist | Fixed to `/api/auth/signup` |
+| 12 | `SignupPage.jsx` | Sent `name` field — backend expects `fullName` | Fixed field name to `fullName` |
+| 13 | `users.role` column | MySQL column too narrow — truncated COORDINATOR/TPO | `ALTER TABLE users MODIFY COLUMN role VARCHAR(20)` |
+| 14 | `AuthService.java` | Repeated signup with same unverified email threw error | Now resends OTP instead of blocking |
+| 15 | `App.jsx` | No routing — URL stayed `localhost:5173` on every page | Added React Router DOM, dedicated URLs per page |
+| 16 | `App.jsx` | User lost session on page refresh | Added `localStorage` persistence for login state |
+| 17 | `App.css` | Dark theme used warm brown — poor contrast | Replaced with charcoal grey (`#1a1a1a / #242424`) |
+| 18 | `App.css` | Light theme cards blended into background | Improved contrast with `#f4f0ec` bg and `#d8d0c8` borders |
 
 ---
 
@@ -418,3 +492,4 @@ Frontend — PAT/pat-ui/src/
 - **Team 20** — VTU Internship 2026
 - Module: Java Full Stack — Recruitment Drive Management System
 - Integration: Team 1 (Auth) + Team 2 (Recruitment) + Team 3 (Frontend)
+- Repository: https://github.com/stuthiseeba/VTU_INTERN_2026_TEAM20_JAVA
