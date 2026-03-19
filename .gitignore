@@ -31,7 +31,24 @@ build/
 
 ### VS Code ###
 .vscode/
-node_modules/ 
-PAT/identity-service/node_modules/ 
-PAT/pat-ui/node_modules/ 
+node_modules/
 /.apt_generated_tests/
+
+### Additional ignores for neatness ###
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+.env
+.env.local
+.env.production
+dist/
+build/
+.cache/
+.npm/
+.yarn/
+coverage/
+.nyc_output/
+*.class
+backend/target/

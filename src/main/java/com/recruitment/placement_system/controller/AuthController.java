@@ -17,6 +17,9 @@ import jakarta.validation.Valid;
 
 import java.util.Map;
 
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+
 @RestController
 @RequestMapping("/api/auth")
 @CrossOrigin(origins = "*")
@@ -110,5 +113,16 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new ApiResponse(false, e.getMessage()));
         }
+    }
+
+    // ── Handle validation errors (e.g., password too short) ───────────────────
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<?> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        StringBuilder errors = new StringBuilder();
+        for (FieldError error : ex.getBindingResult().getFieldErrors()) {
+            errors.append(error.getDefaultMessage()).append(". ");
+        }
+        return ResponseEntity.badRequest()
+            .body(new ApiResponse(false, errors.toString().trim()));
     }
 }
