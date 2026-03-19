@@ -1,14 +1,15 @@
 package com.recruitment.placement_system.controller;
 
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import com.recruitment.placement_system.dto.ConversionMetrics;
 import com.recruitment.placement_system.entity.Application;
-import com.recruitment.placement_system.entity.Student;
+import com.recruitment.placement_system.entity.PatDrive;
+import com.recruitment.placement_system.repository.PatDriveRepository;
 import com.recruitment.placement_system.service.ApplicationService;
 
 @RestController
@@ -18,7 +19,10 @@ public class ApplicationController {
     @Autowired
     private ApplicationService service;
 
-    // ✅ Apply for a drive (with eligibility check)
+    @Autowired
+    private PatDriveRepository patDriveRepository;
+
+    // ✅ Apply for a drive
     @PostMapping
     public Application apply(@RequestBody Application application) {
         return service.apply(application);
@@ -32,7 +36,7 @@ public class ApplicationController {
 
     // ✅ Get applications by drive
     @GetMapping("/drive/{driveId}")
-    public List<Application> getApplicationsByDrive(@PathVariable int driveId) {
+    public List<Application> getApplicationsByDrive(@PathVariable Long driveId) {
         return service.getApplicationsByDrive(driveId);
     }
 
@@ -45,33 +49,30 @@ public class ApplicationController {
         return service.updateStage(id, stage, status);
     }
 
-    // ✅ NEW: Check if a student is eligible for a drive
-    // GET /applications/eligibility?studentId=1&driveId=2
-    @GetMapping("/eligibility")
-    public Map<String, Object> checkEligibility(
-            @RequestParam int studentId,
-            @RequestParam int driveId) {
-        return service.checkEligibility(studentId, driveId);
+    // ✅ Get available drives for student
+    @GetMapping("/student/{studentId}/available")
+    public List<PatDrive> getAvailableDrives(@PathVariable int studentId) {
+        List<PatDrive> allUpcoming = patDriveRepository.findByStatus("Upcoming");
+        List<Application> studentApps = service.getApplications().stream()
+            .filter(a -> a.getStudentId() == studentId)
+            .collect(Collectors.toList());
+        Set<Long> appliedIds = studentApps.stream()
+            .map(Application::getDriveId)
+            .collect(Collectors.toSet());
+        return allUpcoming.stream()
+            .filter(d -> !appliedIds.contains(d.getId()))
+            .collect(Collectors.toList());
     }
 
-    // ✅ NEW: Get all eligible students for a drive
-    // GET /applications/eligible-students/{driveId}
-    @GetMapping("/eligible-students/{driveId}")
-    public List<Student> getEligibleStudents(@PathVariable int driveId) {
-        return service.getEligibleStudents(driveId);
-    }
-
-    // ✅ NEW: Get conversion metrics for a specific drive
-    // GET /applications/metrics/{driveId}
-    @GetMapping("/metrics/{driveId}")
-    public ConversionMetrics getMetricsByDrive(@PathVariable int driveId) {
-        return service.getConversionMetrics(driveId);
-    }
-
-    // ✅ NEW: Get overall conversion metrics across all drives
-    // GET /applications/metrics
-    @GetMapping("/metrics")
-    public ConversionMetrics getOverallMetrics() {
-        return service.getConversionMetrics(0);
+    // ✅ Get applied drives for student
+    @GetMapping("/student/{studentId}/applied")
+    public List<PatDrive> getAppliedDrives(@PathVariable int studentId) {
+        List<Application> studentApps = service.getApplications().stream()
+            .filter(a -> a.getStudentId() == studentId)
+            .collect(Collectors.toList());
+        Set<Long> appliedIds = studentApps.stream()
+            .map(Application::getDriveId)
+            .collect(Collectors.toSet());
+        return patDriveRepository.findAllById(appliedIds);
     }
 }

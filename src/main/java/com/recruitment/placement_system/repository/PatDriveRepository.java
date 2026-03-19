@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface PatDriveRepository extends JpaRepository<PatDrive, Long> {
     List<PatDrive> findByTpoUserId(Long tpoUserId);
+    List<PatDrive> findByStatus(String status);
 }

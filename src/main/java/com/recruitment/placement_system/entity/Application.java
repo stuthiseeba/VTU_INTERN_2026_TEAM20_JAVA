@@ -10,7 +10,7 @@ public class Application {
     private int applicationId;
 
     private int studentId;
-    private int driveId;
+    private Long driveId;  // Changed to Long to match PatDrive.id
     private String stage;
     private String status;
 
@@ -22,8 +22,8 @@ public class Application {
     public int getStudentId() { return studentId; }
     public void setStudentId(int studentId) { this.studentId = studentId; }
 
-    public int getDriveId() { return driveId; }
-    public void setDriveId(int driveId) { this.driveId = driveId; }
+    public Long getDriveId() { return driveId; }
+    public void setDriveId(Long driveId) { this.driveId = driveId; }
 
     public String getStage() { return stage; }
     public void setStage(String stage) { this.stage = stage; }
