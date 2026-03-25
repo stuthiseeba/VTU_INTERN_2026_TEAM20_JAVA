@@ -60,7 +60,7 @@ The Recruitment Drive Management System is a Spring Boot backend application int
 
 ## Project Architecture
 
-
+```
 Browser (React - port 5173)
         │
         ▼ HTTP via Vite Proxy (/api → 8080)
@@ -109,7 +109,7 @@ Browser (React - port 5173)
 │  drive_students                      │
 │  pat_drives                          │
 └──────────────────────────────────────┘
-
+```
 
 🔐 Security Layer (Cross-Cutting)
 --------------------------------
@@ -401,6 +401,7 @@ will add at the end
 
 ## Project Structure
 
+```
 BACKEND
 
 src/main/java/com/recruitment/placement_system/
@@ -459,9 +460,10 @@ src/main/java/com/recruitment/placement_system/
 src/main/resources
 ├── ├── application-gmail.properties.example
     └── application.properties
+```
 
 
-
+```
 FRONTEND
 
 PAT
@@ -480,7 +482,7 @@ PAT
 ├── App.jsx
 ├── index.css
 └── main.jsx     
-
+```
 
 
 
