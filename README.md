@@ -8,7 +8,6 @@ A complete backend REST API system for managing campus recruitment drives, stude
 ## Table of Contents
 
 - [Project Overview](#project-overview)
-- [Team Structure](#team-structure)
 - [Tech Stack](#tech-stack)
 - [Project Architecture](#project-architecture)
 - [Prerequisites](#prerequisites)
@@ -16,7 +15,6 @@ A complete backend REST API system for managing campus recruitment drives, stude
 - [API Reference](#api-reference)
 - [Database Schema](#database-schema)
 - [Project Structure](#project-structure)
-- [Known Issues Fixed](#known-issues-fixed)
 
 ---
 
@@ -32,16 +30,6 @@ The Recruitment Drive Management System is a Spring Boot backend application int
 - React frontend with **React Router** — dedicated URLs per page (Team 3)
 - **Dark / Light theme toggle** — charcoal grey dark mode, persisted across sessions (Team 3)
 - Role-based access control: STUDENT, COORDINATOR, TPO, ADMIN, HR
-
----
-
-## Team Structure
-
-| Team | Module | Responsibility |
-|------|--------|---------------|
-| Team 1 | Authentication Module | Signup with OTP verification, Login, JWT, Password Reset, User Profile |
-| Team 2 | Recruitment & Application | Drives CRUD, Eligibility Engine, Application Workflow, Stage Tracking, Conversion Metrics |
-| Team 3 | Frontend & Analytics | React Dashboard, React Router, Theme Toggle, Drive Display, Application Display |
 
 ---
 
@@ -72,43 +60,68 @@ The Recruitment Drive Management System is a Spring Boot backend application int
 
 ## Project Architecture
 
-```
+
 Browser (React - port 5173)
         │
         ▼ HTTP via Vite Proxy (/api → 8080)
-┌─────────────────────────────┐
-│      Controller Layer       │
-│  AuthController   (Team 1)  │
-│  UserController   (Team 1)  │
-│  DriveController  (Team 2)  │
-│  ApplicationCtrl  (Team 2)  │
-│  StudentController(Team 2)  │
-└────────────┬────────────────┘
-             │
-┌────────────▼────────────────┐
-│       Service Layer         │
-│  AuthService      (Team 1)  │  ← OTP generation + email
-│  EmailService     (Team 1)  │  ← Gmail SMTP
-│  DriveService     (Team 2)  │
-│  ApplicationSvc   (Team 2)  │  ← Eligibility Engine + Metrics
-│  StudentService   (Team 2)  │
-└────────────┬────────────────┘
-             │
-┌────────────▼────────────────┐
-│     Repository Layer        │
-└────────────┬────────────────┘
-             │
-┌────────────▼────────────────┐
-│   MySQL — recruitment_system│
-│  users, drive,              │
-│  student, application       │
-└─────────────────────────────┘
+┌──────────────────────────────────────┐
+│         Controller Layer             │
+│  AuthController                      │
+│  UserController                      │
+│  ContentController                   │
+│  DriveController                     │
+│  TpoDriveController                  │ 
+│  ApplicationController               │
+│  StudentController                   │
+│  StudentProfileController            │
+└───────────────┬──────────────────────┘
+                │
+┌───────────────▼──────────────────────┐
+│            Service Layer             │
+│  AuthService                         │ ← OTP + Email Verification
+│  EmailService                        │ ← Gmail SMTP
+│  DriveService                        │
+│  ApplicationService                  │ ← Eligibility Engine + Metrics
+│  StudentService                      │
+└───────────────┬──────────────────────┘
+                │
+┌───────────────▼──────────────────────┐
+│          Repository Layer            │
+│  UserRepository                      │
+│  DriveRepository                     │
+│  StudentRepository                   │
+│  StudentProfileRepository            │
+│  ApplicationRepository               │
+│  ContentItemRepository               │
+│  DriveStudentRepository              │
+│  PatDriveRepository                  │
+└───────────────┬──────────────────────┘
+                │
+┌───────────────▼──────────────────────┐
+│             Database (MySQL)         │
+│  users                               │
+│  roles                               │
+│  drives                              │
+│  students                            │
+│  student_profiles                    │
+│  applications                        │ 
+│  content_items                       │
+│  drive_students                      │
+│  pat_drives                          │
+└──────────────────────────────────────┘
 
-Security:
-Public:    /api/auth/**
-Protected: all other endpoints → require Bearer JWT token
-```
 
+🔐 Security Layer (Cross-Cutting)
+--------------------------------
+- JwtAuthenticationFilter
+- JwtUtil
+- SecurityConfig
+
+Public Endpoints:
+  /api/auth/**
+
+Protected Endpoints:
+  All other APIs → require Bearer JWT token
 ---
 
 ## Prerequisites
@@ -204,7 +217,7 @@ Started PlacementSystemApplication in X seconds
 
 ---
 
-### Frontend — React (Team 3)
+### Frontend — React 
 
 **Step 1 — Go to frontend folder**
 ```cmd
@@ -384,69 +397,53 @@ Returns: `{ token, id, email, fullName, role, isVerified }`
 ---
 
 ## Database Schema
-
-```sql
--- Team 1
-users (
-  id, email, password, full_name, phone_number,
-  role VARCHAR(20),
-  is_verified, is_active,
-  otp, otp_expiry,
-  reset_token, reset_token_expiry,
-  created_at, updated_at
-)
-
--- Team 2
-drive (
-  drive_id, company_name, role, package_amount, location,
-  min_cgpa, eligible_branches, graduation_year, required_skills
-)
-
-student (
-  student_id, name, email, cgpa, branch,
-  graduation_year, skills
-)
-
-application (
-  application_id, student_id, drive_id, stage, status
-)
-```
-
----
+will add at the end
 
 ## Project Structure
 
-```
+BACKEND
+
 src/main/java/com/recruitment/placement_system/
 ├── PlacementSystemApplication.java
 ├── config/
 │   └── SecurityConfig.java
 ├── controller/
-│   ├── AuthController.java           ← Team 1
-│   ├── UserController.java           ← Team 1
-│   ├── DriveController.java          ← Team 2
-│   ├── ApplicationController.java    ← Team 2
-│   └── StudentController.java        ← Team 2
+│   ├── AuthController.java           
+|   ├── ContentController.java
+│   ├── UserController.java           
+│   ├── DriveController.java          
+│   ├── ApplicationController.java    
+│   ├── StudentController.java        
+│   ├── StudentProfileController.java
+│   └── TpoDriveController.java
 ├── dto/
-│   ├── SignupRequest.java            ← fullName, phoneNumber, role
+│   ├── SignupRequest.java            
 │   ├── LoginRequest.java
 │   ├── AuthResponse.java
 │   ├── ApiResponse.java
 │   ├── ForgotPasswordRequest.java
 │   ├── ResetPasswordRequest.java
-│   └── ConversionMetrics.java        ← Team 2
+│   └── ConversionMetrics.java        
 ├── entity/
 │   ├── User.java                     ← includes otp, otpExpiry fields
 │   ├── Role.java                     ← STUDENT, COORDINATOR, TPO, ADMIN, HR
 │   ├── Drive.java                    ← includes eligibility fields
 │   ├── Student.java                  ← includes graduationYear, skills
-│   └── Application.java
+│   ├── Application.java
+│   ├── ContentItem.java
+│   ├── DriveStudent.java
+│   ├── PatDrive.java
+│   └── StudentProfile.java
 ├── exception/
 │   └── GlobalExceptionHandler.java
 ├── repository/
 │   ├── UserRepository.java
 │   ├── DriveRepository.java
+│   ├── DriveStudentRepository.java
+│   ├── PatDriveRepository.java
 │   ├── StudentRepository.java
+│   ├── StudentProfileRepository.java
+│   ├── ContentItemRepository.java
 │   └── ApplicationRepository.java
 ├── security/
 │   ├── JwtUtil.java
@@ -454,53 +451,39 @@ src/main/java/com/recruitment/placement_system/
 └── service/
     ├── AuthService.java              ← OTP generation + email verification
     ├── EmailService.java             ← Gmail SMTP OTP delivery
-    ├── DriveService.java             ← Team 2
+    ├── DriveService.java             
     ├── ApplicationService.java       ← Eligibility Engine + Metrics
     └── StudentService.java
 
-Frontend — PAT/src/
-├── App.jsx                           ← React Router + theme toggle + localStorage auth
-├── App.css                           ← CSS variables (light/dark themes)
-└── pages/
-    ├── HomePage.jsx
-    ├── LoginPage.jsx                 ← JWT login
-    ├── SignupPage.jsx                ← OTP signup flow
-    ├── InfoPage.jsx
-    ├── StudentDashboard.jsx          ← Team 3
-    ├── TpoDashboard.jsx              ← Team 3
-    └── CoordinatorDashboard.jsx      ← Team 3
-```
+
+src/main/resources
+├── ├── application-gmail.properties.example
+    └── application.properties
+
+
+
+FRONTEND
+
+PAT
+├── src/
+    ├── App.jsx                           ← React Router + theme toggle + localStorage auth
+    ├── App.css                           ← CSS variables (light/dark themes)
+    └── pages/
+        ├── HomePage.jsx
+        ├── LoginPage.jsx                 ← JWT login
+        ├── SignupPage.jsx                ← OTP signup flow
+        ├── InfoPage.jsx
+        ├── StudentDashboard.jsx          
+        ├── TpoDashboard.jsx              
+        └── CoordinatorDashboard.jsx
+├── App.css
+├── App.jsx
+├── index.css
+└── main.jsx     
+
+
+
 
 ---
 
-## Known Issues Fixed
 
-| # | File | Bug | Fix |
-|---|------|-----|-----|
-| 1 | `GlobalExceptionHandler.java` | Wrong import from Team 1 old package | Fixed import path |
-| 2 | `AuthService.java` | Missing User import | Added import |
-| 3 | `SecurityConfig.java` | Typo in csrf disable | Fixed typo |
-| 4 | `application.properties` | JWT secret too short | Replaced with 48-char key |
-| 5 | All DTOs/entities | Lombok not installed in Eclipse | Replaced with explicit getters/setters |
-| 6 | `target/classes/` | Stale compiled class files | Fixed with mvn clean |
-| 7 | `Drive.java` | Missing eligibility fields | Added minCgpa, eligibleBranches, graduationYear, requiredSkills |
-| 8 | `Student.java` | Missing graduationYear and skills | Added both fields |
-| 9 | `ApplicationService.java` | No eligibility check on apply | Added full eligibility engine |
-| 10 | `ConversionMetrics.java` | File name case mismatch in Eclipse | Renamed to correct PascalCase |
-| 11 | `SignupPage.jsx` | Called `/api/auth/register` — endpoint doesn't exist | Fixed to `/api/auth/signup` |
-| 12 | `SignupPage.jsx` | Sent `name` field — backend expects `fullName` | Fixed field name to `fullName` |
-| 13 | `users.role` column | MySQL column too narrow — truncated COORDINATOR/TPO | `ALTER TABLE users MODIFY COLUMN role VARCHAR(20)` |
-| 14 | `AuthService.java` | Repeated signup with same unverified email threw error | Now resends OTP instead of blocking |
-| 15 | `App.jsx` | No routing — URL stayed `localhost:5173` on every page | Added React Router DOM, dedicated URLs per page |
-| 16 | `App.jsx` | User lost session on page refresh | Added `localStorage` persistence for login state |
-| 17 | `App.css` | Dark theme used warm brown — poor contrast | Replaced with charcoal grey (`#1a1a1a / #242424`) |
-| 18 | `App.css` | Light theme cards blended into background | Improved contrast with `#f4f0ec` bg and `#d8d0c8` borders |
-
----
-
-## Authors
-
-- **Team 20** — VTU Internship 2026
-- Module: Java Full Stack — Recruitment Drive Management System
-- Integration: Team 1 (Auth) + Team 2 (Recruitment) + Team 3 (Frontend)
-- Repository: https://github.com/stuthiseeba/VTU_INTERN_2026_TEAM20_JAVA
