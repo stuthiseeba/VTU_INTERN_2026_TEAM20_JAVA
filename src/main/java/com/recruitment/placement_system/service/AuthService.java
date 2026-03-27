@@ -32,9 +32,10 @@ public class AuthService {
     @Autowired
     private EmailService emailService;
 
-    // ✅ 5-digit OTP
+    // ✅ 6-digit OTP
+    
     private String generateOtp() {
-        return String.format("%05d", new Random().nextInt(100000));
+        return String.format("%06d", new Random().nextInt(900000) + 100000);
     }
 
     // ── Signup ───────────────────────────────────────────────────────────────
