@@ -7,6 +7,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.Arrays;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import com.recruitment.placement_system.entity.Application;
 import com.recruitment.placement_system.entity.PatDrive;
 import com.recruitment.placement_system.repository.PatDriveRepository;
+import com.recruitment.placement_system.repository.StudentProfileRepository;
 import com.recruitment.placement_system.service.ApplicationService;
 
 @RestController
@@ -26,6 +28,9 @@ public class ApplicationController {
 
     @Autowired
     private PatDriveRepository patDriveRepository;
+
+    @Autowired
+    private StudentProfileRepository studentProfileRepository; // ✅ NEW: Need this to check student department
 
     // ✅ Apply for a drive
     @PostMapping
@@ -54,16 +59,24 @@ public class ApplicationController {
         return service.updateStage(id, stage, status);
     }
 
-    // ✅ Get available drives for student
+    // ✅ Get available drives for student (WITH DEPARTMENT FILTER)
     @GetMapping("/student/{studentId}/available")
     public List<PatDrive> getAvailableDrives(@PathVariable int studentId) {
+        
+        // 1. Fetch the student's department
+        String studentDept = studentProfileRepository.findByUserId((long) studentId)
+                .map(com.recruitment.placement_system.entity.StudentProfile::getDepartment)
+                .orElse("");
+
         List<Application> studentApps = service.getApplicationsByStudent(studentId);
         Set<Long> appliedIds = studentApps.stream()
             .map(Application::getDriveId)
             .collect(Collectors.toSet());
+            
         return patDriveRepository.findAll().stream()
             .filter(this::isVisibleToStudents)
             .filter(d -> !appliedIds.contains(d.getId()))
+            .filter(d -> isDepartmentEligible(d, studentDept)) // ✅ 2. Filter drives by department
             .collect(Collectors.toList());
     }
 
@@ -111,5 +124,17 @@ public class ApplicationController {
         String normalized = status.trim().toLowerCase(Locale.ROOT);
         return !Set.of("closed", "completed", "archived", "deleted", "cancelled", "canceled")
             .contains(normalized);
+    }
+
+    // ✅ Helper method to match student branch against allowed branches
+    private boolean isDepartmentEligible(PatDrive drive, String studentDept) {
+        String allowed = drive.getEligibleBranches();
+        if (allowed == null || allowed.trim().isEmpty()) {
+            return true; // If TPO didn't specify branches, it's open to all
+        }
+        if (studentDept == null || studentDept.trim().isEmpty()) {
+            return false; // Drive requires branches, but student hasn't updated their profile yet
+        }
+        return Arrays.asList(allowed.split(",")).contains(studentDept);
     }
 }

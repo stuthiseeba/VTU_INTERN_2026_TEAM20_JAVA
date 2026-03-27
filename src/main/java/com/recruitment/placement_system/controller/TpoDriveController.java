@@ -36,6 +36,7 @@ public class TpoDriveController {
         drive.setVenue(body.get("venue"));
         drive.setEligibility(body.get("eligibility"));
         drive.setRounds(body.get("rounds"));
+        drive.setEligibleBranches(body.get("eligibleBranches")); // ✅ NEW line to save allowed departments
         drive.setStatus("Upcoming");
         PatDrive saved = driveRepository.save(drive);
         return ResponseEntity.ok(Map.of(

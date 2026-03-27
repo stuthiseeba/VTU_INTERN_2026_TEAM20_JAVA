@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 
+const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AIML", "DS"];
+
 function AppliedDrives({ userId, userEmail }) {
   const [applications, setApplications] = useState([]);
 
@@ -159,7 +161,16 @@ function AvailableDrives({ userId, userName, userEmail }) {
           <h3>Academic Details</h3>
           <div className="form-grid three">
             <div className="form-field"><label>CGPA</label><input type="text" {...f('cgpa')} placeholder="e.g. 8.5" /></div>
-            <div className="form-field"><label>Department</label><input type="text" {...f('department')} placeholder="e.g. CSE" /></div>
+            <div className="form-field">
+              <label>Department</label>
+              <input 
+                type="text" 
+                value={appData.department || ''} 
+                readOnly 
+                style={{ backgroundColor: '#e9ecef', color: '#6c757d', cursor: 'not-allowed' }}
+                title="Your department is locked for this application based on your profile."
+              />
+            </div>
             <div className="form-field"><label>College</label><input type="text" {...f('college')} placeholder="College name" /></div>
             <div className="form-field"><label>Degree</label><input type="text" {...f('degreeName')} placeholder="e.g. B.Tech" /></div>
             <div className="form-field"><label>Specialization</label><input type="text" {...f('specialization')} placeholder="e.g. Computer Science" /></div>
@@ -250,7 +261,7 @@ export default function StudentDashboard({ user, onLogout }) {
       <div className="dash-sidebar">
         <div className="s-logo">Placement<span>Portal</span></div>
         <div className="s-user">
-          <div className="s-avatar">{(user.name||'S')[0].toUpperCase()}</div>
+          <div className="s-avatar">{(user.name||'S').toUpperCase()}</div>
           <div className="s-name">{user.name}</div>
           <div className="s-role">Student</div>
         </div>
@@ -265,7 +276,7 @@ export default function StudentDashboard({ user, onLogout }) {
       <div className="dash-main">
         {tab === 'overview' && (
           <div>
-            <div className="dash-topbar"><div><h1>Welcome back, {user.name?.split(' ')[0]}</h1><p>Here's your placement activity summary</p></div></div>
+            <div className="dash-topbar"><div><h1>Welcome back, {user.name?.split(' ')}</h1><p>Here's your placement activity summary</p></div></div>
             <div className="stat-cards">
               <div className="stat-card"><div className="stat-val">0</div><div className="stat-label">Drives Applied</div></div>
               <div className="stat-card"><div className="stat-val">0</div><div className="stat-label">Interviews Scheduled</div></div>
@@ -306,7 +317,13 @@ export default function StudentDashboard({ user, onLogout }) {
               <h3>CGPA / Percentage</h3>
               <div className="form-grid three">
                 <div className="form-field"><label>Current CGPA</label><input type="text" {...p('cgpa')} placeholder="e.g. 8.5" /></div>
-                <div className="form-field"><label>Department</label><input type="text" {...p('department')} placeholder="e.g. Computer Science" /></div>
+                <div className="form-field">
+                  <label>Department</label>
+                  <select {...p('department')}>
+                    <option value="">Select Department</option>
+                    {DEPARTMENTS.map(d => <option key={d} value={d}>{d}</option>)}
+                  </select>
+                </div>
                 <div className="form-field"><label>College Name</label><input type="text" {...p('college')} placeholder="Your college name" /></div>
               </div>
             </div>

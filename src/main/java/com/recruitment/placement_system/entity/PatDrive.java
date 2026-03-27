@@ -21,6 +21,7 @@ public class PatDrive {
     private String eligibility;
     private String rounds;
     private String status;
+    private String eligibleBranches; // ✅ NEW: Stores allowed departments (e.g. "CSE,ISE")
 
     public Long getId() { return id; }
     public Long getTpoUserId() { return tpoUserId; }
@@ -41,4 +42,6 @@ public class PatDrive {
     public void setRounds(String rounds) { this.rounds = rounds; }
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+    public String getEligibleBranches() { return eligibleBranches; }
+    public void setEligibleBranches(String eligibleBranches) { this.eligibleBranches = eligibleBranches; }
 }

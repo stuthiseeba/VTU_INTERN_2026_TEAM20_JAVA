@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 
+const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AIML", "DS"];
+
 function latestStudents(studentRows) {
   const latestByEmail = new Map();
 
@@ -18,7 +20,7 @@ export default function TpoDashboard({ user, onLogout }) {
   const [drives, setDrives] = useState([]);
   const [funnelDriveId, setFunnelDriveId] = useState(null);
   const [applications, setApplications] = useState([]);
-  const [form, setForm] = useState({ company:'', role:'', driveDate:'', driveTime:'', venue:'', eligibility:'', rounds:'' });
+  const [form, setForm] = useState({ company:'', role:'', driveDate:'', driveTime:'', venue:'', eligibility:'', rounds:'', eligibleBranches: [] });
 
   useEffect(() => { loadDrives(); }, []);
 
@@ -79,10 +81,14 @@ export default function TpoDashboard({ user, onLogout }) {
     try {
       const res = await fetch("http://localhost:8080/api/tpo/drive", {
         method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ tpoUserId: user.userId, ...form })
+        body: JSON.stringify({ 
+            tpoUserId: user.userId, 
+            ...form,
+            eligibleBranches: (form.eligibleBranches || []).join(',') 
+        })
       });
       if (!res.ok) throw new Error();
-      setForm({ company:'', role:'', driveDate:'', driveTime:'', venue:'', eligibility:'', rounds:'' });
+      setForm({ company:'', role:'', driveDate:'', driveTime:'', venue:'', eligibility:'', rounds:'', eligibleBranches: [] });
       await loadDrives();
     } catch { alert("Cannot connect to server."); }
   }
@@ -144,7 +150,7 @@ export default function TpoDashboard({ user, onLogout }) {
       <div className="dash-sidebar">
         <div className="s-logo">Placement<span>Portal</span></div>
         <div className="s-user">
-          <div className="s-avatar">{(user.name||'T')[0].toUpperCase()}</div>
+          <div className="s-avatar">{(user.name||'T').toUpperCase()}</div>
           <div className="s-name">{user.name}</div>
           <div className="s-role">TPO</div>
         </div>
@@ -195,6 +201,30 @@ export default function TpoDashboard({ user, onLogout }) {
               <input type="text" placeholder="Venue" value={form.venue} onChange={e => setForm(p => ({ ...p, venue: e.target.value }))} />
               <input type="text" placeholder="Eligibility (e.g. CGPA > 8.0)" value={form.eligibility} onChange={e => setForm(p => ({ ...p, eligibility: e.target.value }))} />
               <input type="text" placeholder="Rounds (e.g. Written, Technical, HR)" value={form.rounds} onChange={e => setForm(p => ({ ...p, rounds: e.target.value }))} />
+              
+              <div style={{ marginBottom: '15px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Departments Allowed:</label>
+                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                  {DEPARTMENTS.map(dept => (
+                    <label key={dept} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', fontWeight: 'normal' }}>
+                      <input 
+                        type="checkbox" 
+                        value={dept} 
+                        checked={form.eligibleBranches?.includes(dept)} 
+                        onChange={(e) => {
+                          if(e.target.checked) {
+                            setForm(p => ({ ...p, eligibleBranches: [...(p.eligibleBranches || []), dept] }));
+                          } else {
+                            setForm(p => ({ ...p, eligibleBranches: (p.eligibleBranches || []).filter(d => d !== dept) }));
+                          }
+                        }} 
+                      />
+                      {dept}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
               <button onClick={addDrive}>Add Drive</button>
             </div>
             <div className="profile-card">
