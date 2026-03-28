@@ -2,16 +2,22 @@ package com.recruitment.placement_system.controller;
 
 import com.recruitment.placement_system.entity.DriveStudent;
 import com.recruitment.placement_system.entity.PatDrive;
+import com.recruitment.placement_system.entity.StudentProfile;
+import com.recruitment.placement_system.entity.User;
 import com.recruitment.placement_system.repository.ApplicationRepository;
 import com.recruitment.placement_system.repository.DriveStudentRepository;
 import com.recruitment.placement_system.repository.PatDriveRepository;
+import com.recruitment.placement_system.repository.StudentProfileRepository;
+import com.recruitment.placement_system.repository.UserRepository;
 import com.recruitment.placement_system.service.ApplicationService;
+import com.recruitment.placement_system.service.EmailService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 // ✅ Team 3 - TPO drive management and student funnel tracking
 @RestController
@@ -23,26 +29,82 @@ public class TpoDriveController {
     @Autowired private DriveStudentRepository driveStudentRepository;
     @Autowired private ApplicationRepository applicationRepository;
     @Autowired private ApplicationService applicationService;
+    
+    // Dependencies for Email Automation
+    @Autowired private EmailService emailService;
+    @Autowired private StudentProfileRepository studentProfileRepository;
+    @Autowired private UserRepository userRepository;
 
-    // ── Create Drive ──────────────────────────────────────────────────────────
+    // ── Create Drive & Send Emails ────────────────────────────────────────────
     @PostMapping("/drive")
-    public ResponseEntity<?> createDrive(@RequestBody Map<String, String> body) {
-        PatDrive drive = new PatDrive();
-        drive.setTpoUserId(Long.parseLong(body.get("tpoUserId")));
-        drive.setCompany(body.get("company"));
-        drive.setRole(body.get("role"));
-        drive.setDriveDate(body.get("driveDate"));
-        drive.setDriveTime(body.get("driveTime"));
-        drive.setVenue(body.get("venue"));
-        drive.setEligibility(body.get("eligibility"));
-        drive.setRounds(body.get("rounds"));
-        drive.setEligibleBranches(body.get("eligibleBranches")); // ✅ NEW line to save allowed departments
-        drive.setStatus("Upcoming");
+    public ResponseEntity<?> createDrive(@RequestBody PatDrive drive) {
+        
+        if (drive.getStatus() == null || drive.getStatus().isEmpty()) {
+            drive.setStatus("Open");
+        }
+
         PatDrive saved = driveRepository.save(drive);
+
+        // ✅ If TPO checked "Send Email Alert", trigger email automation
+        if (Boolean.TRUE.equals(drive.getSendEmailAlert())) {
+            
+            // Run email sending in a background thread so the UI doesn't freeze
+            new Thread(() -> {
+                List<StudentProfile> allStudents = studentProfileRepository.findAll();
+                
+                for (StudentProfile profile : allStudents) {
+                    if (isEligible(profile, saved)) {
+                        Optional<User> userOpt = userRepository.findById(profile.getUserId());
+                        if (userOpt.isPresent()) {
+                            User u = userOpt.get();
+                            emailService.sendDriveNotificationEmail(
+                                u.getEmail(), 
+                                u.getFullName(), 
+                                saved.getCompany(), 
+                                saved.getRole(), 
+                                saved.getDriveDate(), 
+                                saved.getRegistrationDeadline()
+                            );
+                        }
+                    }
+                }
+            }).start();
+        }
+
         return ResponseEntity.ok(Map.of(
-            "message", "Drive created",
+            "message", "Drive created successfully",
             "driveId", saved.getId().toString()
         ));
+    }
+
+    // ── Helper to check if a student is eligible for the email alert ─────────
+    private boolean isEligible(StudentProfile profile, PatDrive drive) {
+        // 1. Check Branches
+        if (drive.getEligibleBranches() != null && !drive.getEligibleBranches().trim().isEmpty()) {
+            if (profile.getDepartment() == null || profile.getDepartment().trim().isEmpty()) {
+                return false; // Student hasn't set department yet
+            }
+            if (!drive.getEligibleBranches().contains(profile.getDepartment())) {
+                return false; // Student department not in allowed list
+            }
+        }
+
+        // 2. Check Min CGPA
+        if (drive.getMinCgpa() != null && drive.getMinCgpa() > 0) {
+            if (profile.getCgpa() == null || profile.getCgpa().trim().isEmpty()) {
+                return false; // Student hasn't set CGPA yet
+            }
+            try {
+                double studentCgpa = Double.parseDouble(profile.getCgpa());
+                if (studentCgpa < drive.getMinCgpa()) {
+                    return false; // Student CGPA is too low
+                }
+            } catch (NumberFormatException e) {
+                return false;
+            }
+        }
+
+        return true; // Student passed all checks
     }
 
     // ── Get Drives for a TPO ──────────────────────────────────────────────────

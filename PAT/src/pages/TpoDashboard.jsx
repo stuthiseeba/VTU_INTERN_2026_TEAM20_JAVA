@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 
 const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AIML", "DS"];
+const PROCESS_ROUNDS = ["Aptitude Test", "Coding Round", "Technical Interview", "HR Interview", "Group Discussion"];
 
 function latestStudents(studentRows) {
   const latestByEmail = new Map();
@@ -20,7 +21,16 @@ export default function TpoDashboard({ user, onLogout }) {
   const [drives, setDrives] = useState([]);
   const [funnelDriveId, setFunnelDriveId] = useState(null);
   const [applications, setApplications] = useState([]);
-  const [form, setForm] = useState({ company:'', role:'', driveDate:'', driveTime:'', venue:'', eligibility:'', rounds:'', eligibleBranches: [] });
+  
+  // Initialized with all the new structured fields
+  const [form, setForm] = useState({ 
+    company: '', role: '', jobType: 'Full-time', ctc: '', stipend: '', location: '', companyType: 'Product-based',
+    driveDate: '', driveTime: '', venue: '', driveMode: 'Offline',
+    minCgpa: '', maxBacklogs: '0', tenthPercent: '', twelfthPercent: '', gapYears: '0', 
+    eligibleBranches: [], graduationYear: new Date().getFullYear(), yearAllowed: '4th year',
+    rounds: [], registrationDeadline: '', resultDate: '', jdLink: '', applyLink: '', companyWebsite: '', bondDetails: '', 
+    status: 'Open', numberOfPositions: '', autoShortlist: false, sendEmailAlert: false
+  });
 
   useEffect(() => { loadDrives(); }, []);
 
@@ -45,9 +55,7 @@ export default function TpoDashboard({ user, onLogout }) {
           date: d.driveDate,
           time: d.driveTime,
           venue: d.venue,
-          eligibility: d.eligibility,
-          rounds: d.rounds,
-          status: d.status,
+          status: d.status || 'Open',
           students: latestStudents(studentList.map(s => ({
             id: s.id,
             name: s.studentName,
@@ -84,12 +92,23 @@ export default function TpoDashboard({ user, onLogout }) {
         body: JSON.stringify({ 
             tpoUserId: user.userId, 
             ...form,
-            eligibleBranches: (form.eligibleBranches || []).join(',') 
+            eligibleBranches: (form.eligibleBranches || []).join(','),
+            rounds: (form.rounds || []).join(',')
         })
       });
       if (!res.ok) throw new Error();
-      setForm({ company:'', role:'', driveDate:'', driveTime:'', venue:'', eligibility:'', rounds:'', eligibleBranches: [] });
+      
+      // Reset form on success
+      setForm({ 
+        company: '', role: '', jobType: 'Full-time', ctc: '', stipend: '', location: '', companyType: 'Product-based',
+        driveDate: '', driveTime: '', venue: '', driveMode: 'Offline',
+        minCgpa: '', maxBacklogs: '0', tenthPercent: '', twelfthPercent: '', gapYears: '0', 
+        eligibleBranches: [], graduationYear: new Date().getFullYear(), yearAllowed: '4th year',
+        rounds: [], registrationDeadline: '', resultDate: '', jdLink: '', applyLink: '', companyWebsite: '', bondDetails: '', 
+        status: 'Open', numberOfPositions: '', autoShortlist: false, sendEmailAlert: false
+      });
       await loadDrives();
+      alert("Drive added successfully!");
     } catch { alert("Cannot connect to server."); }
   }
 
@@ -155,7 +174,7 @@ export default function TpoDashboard({ user, onLogout }) {
           <div className="s-role">TPO</div>
         </div>
         <div className="dash-nav">
-          {[['tpo-overview','📊','Overview'],['tpo-drives','🏢','Manage Drives'],['tpo-students','👥','All Students'],['tpo-funnel','🔄','Recruitment Funnel'],['tpo-applications','📄','Applications']].map(([id,icon,label]) => (  // Added Applications tab
+          {[['tpo-overview','📊','Overview'],['tpo-drives','🏢','Manage Drives'],['tpo-students','👥','All Students'],['tpo-funnel','🔄','Recruitment Funnel'],['tpo-applications','📄','Applications']].map(([id,icon,label]) => (
             <a key={id} className={tab===id?'active':''} onClick={() => setTab(id)}><span className="nav-icon">{icon}</span> {label}</a>
           ))}
         </div>
@@ -192,31 +211,85 @@ export default function TpoDashboard({ user, onLogout }) {
         {tab === 'tpo-drives' && (
           <div>
             <div className="dash-topbar"><div><h1>Manage Drives</h1><p>Create and manage placement drives</p></div></div>
-            <div className="add-content-form">
-              <h4>Add New Drive</h4>
-              <input type="text" placeholder="Company Name" value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} />
-              <input type="text" placeholder="Role (e.g. SDE)" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} />
-              <input type="date" placeholder="Drive Date" value={form.driveDate} onChange={e => setForm(p => ({ ...p, driveDate: e.target.value }))} />
-              <input type="text" placeholder="Drive Time (e.g. 10:00 AM)" value={form.driveTime} onChange={e => setForm(p => ({ ...p, driveTime: e.target.value }))} />
-              <input type="text" placeholder="Venue" value={form.venue} onChange={e => setForm(p => ({ ...p, venue: e.target.value }))} />
-              <input type="text" placeholder="Eligibility (e.g. CGPA > 8.0)" value={form.eligibility} onChange={e => setForm(p => ({ ...p, eligibility: e.target.value }))} />
-              <input type="text" placeholder="Rounds (e.g. Written, Technical, HR)" value={form.rounds} onChange={e => setForm(p => ({ ...p, rounds: e.target.value }))} />
+            
+            <div className="add-content-form" style={{ padding: '20px', background: '#fff', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', marginBottom: '30px' }}>
+              <h3 style={{ marginBottom: '20px', color: '#333' }}>🚀 Create New Placement Drive</h3>
               
-              <div style={{ marginBottom: '15px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Departments Allowed:</label>
+              {/* SECTION 1: Basic Info */}
+              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>1. Basic Information</h5>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
+                <input type="text" placeholder="Company Name" value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+                <input type="text" placeholder="Role (e.g. SDE)" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+                
+                <select value={form.jobType} onChange={e => setForm(p => ({ ...p, jobType: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
+                  <option value="Full-time">Full-time</option>
+                  <option value="Internship">Internship</option>
+                  <option value="Internship + PPO">Internship + PPO</option>
+                </select>
+                
+                <select value={form.companyType} onChange={e => setForm(p => ({ ...p, companyType: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
+                  <option value="Product-based">Product-based</option>
+                  <option value="Service-based">Service-based</option>
+                  <option value="Startup">Startup</option>
+                </select>
+
+                <input type="number" placeholder="CTC (LPA)" step="0.1" value={form.ctc} onChange={e => setForm(p => ({ ...p, ctc: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+                <input type="number" placeholder="Stipend (per month)" value={form.stipend} onChange={e => setForm(p => ({ ...p, stipend: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+                <input type="text" placeholder="Location (City)" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+              </div>
+
+              {/* SECTION 2: Drive Details */}
+              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>2. Drive Details</h5>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
+                <div>
+                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Drive Date</label>
+                   <input type="date" value={form.driveDate} onChange={e => setForm(p => ({ ...p, driveDate: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                </div>
+                <div>
+                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Time</label>
+                   <input type="time" value={form.driveTime} onChange={e => setForm(p => ({ ...p, driveTime: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                </div>
+                <div>
+                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Mode of Drive</label>
+                   <select value={form.driveMode} onChange={e => setForm(p => ({ ...p, driveMode: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }}>
+                     <option value="Online">Online</option>
+                     <option value="Offline">Offline</option>
+                     <option value="Hybrid">Hybrid</option>
+                   </select>
+                </div>
+                <div>
+                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Venue / Link</label>
+                   <input type="text" placeholder="Venue or Meet Link" value={form.venue} onChange={e => setForm(p => ({ ...p, venue: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                </div>
+              </div>
+
+              {/* SECTION 3: Eligibility */}
+              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>3. Eligibility & Auto-Filtering</h5>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+                <input type="number" placeholder="Min CGPA (e.g. 7.5)" step="0.1" value={form.minCgpa} onChange={e => setForm(p => ({ ...p, minCgpa: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+                <input type="number" placeholder="Max Backlogs Allowed" min="0" value={form.maxBacklogs} onChange={e => setForm(p => ({ ...p, maxBacklogs: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+                <input type="number" placeholder="10th % (Optional)" step="0.1" value={form.tenthPercent} onChange={e => setForm(p => ({ ...p, tenthPercent: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+                <input type="number" placeholder="12th/Diploma % (Optional)" step="0.1" value={form.twelfthPercent} onChange={e => setForm(p => ({ ...p, twelfthPercent: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+                <input type="number" placeholder="Allowed Gap Years" min="0" value={form.gapYears} onChange={e => setForm(p => ({ ...p, gapYears: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+                
+                <select value={form.yearAllowed} onChange={e => setForm(p => ({ ...p, yearAllowed: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
+                  <option value="3rd year">3rd year</option>
+                  <option value="4th year">4th year</option>
+                  <option value="Both">Both (3rd & 4th)</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '25px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold' }}>Branches Allowed:</label>
                 <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                   {DEPARTMENTS.map(dept => (
-                    <label key={dept} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', fontWeight: 'normal' }}>
+                    <label key={dept} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer' }}>
                       <input 
                         type="checkbox" 
-                        value={dept} 
                         checked={form.eligibleBranches?.includes(dept)} 
                         onChange={(e) => {
-                          if(e.target.checked) {
-                            setForm(p => ({ ...p, eligibleBranches: [...(p.eligibleBranches || []), dept] }));
-                          } else {
-                            setForm(p => ({ ...p, eligibleBranches: (p.eligibleBranches || []).filter(d => d !== dept) }));
-                          }
+                          if(e.target.checked) setForm(p => ({ ...p, eligibleBranches: [...(p.eligibleBranches || []), dept] }));
+                          else setForm(p => ({ ...p, eligibleBranches: (p.eligibleBranches || []).filter(d => d !== dept) }));
                         }} 
                       />
                       {dept}
@@ -225,15 +298,70 @@ export default function TpoDashboard({ user, onLogout }) {
                 </div>
               </div>
 
-              <button onClick={addDrive}>Add Drive</button>
+              {/* SECTION 4: Process */}
+              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>4. Selection Process</h5>
+              <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '25px' }}>
+                {PROCESS_ROUNDS.map(round => (
+                  <label key={round} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer', background: '#f5f7fb', padding: '8px 12px', borderRadius: '20px' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={form.rounds?.includes(round)} 
+                      onChange={(e) => {
+                        if(e.target.checked) setForm(p => ({ ...p, rounds: [...(p.rounds || []), round] }));
+                        else setForm(p => ({ ...p, rounds: (p.rounds || []).filter(r => r !== round) }));
+                      }} 
+                    />
+                    {round}
+                  </label>
+                ))}
+              </div>
+
+              {/* SECTION 5 & 6: Deadlines and Extras */}
+              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>5. Deadlines & Links</h5>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
+                <div>
+                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Registration Deadline</label>
+                   <input type="date" value={form.registrationDeadline} onChange={e => setForm(p => ({ ...p, registrationDeadline: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                </div>
+                <div>
+                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Result Date (Expected)</label>
+                   <input type="date" value={form.resultDate} onChange={e => setForm(p => ({ ...p, resultDate: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                </div>
+                <div>
+                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Bond Details</label>
+                   <input type="text" placeholder="e.g. Yes - 2 Years" value={form.bondDetails} onChange={e => setForm(p => ({ ...p, bondDetails: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                </div>
+                <div>
+                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>JD / Apply Link</label>
+                   <input type="url" placeholder="https://..." value={form.jdLink} onChange={e => setForm(p => ({ ...p, jdLink: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                </div>
+              </div>
+
+              {/* SECTION 7: Smart Automation */}
+              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>6. Smart Automation</h5>
+              <div style={{ display: 'flex', gap: '25px', marginBottom: '25px', padding: '15px', background: '#f9fafc', borderRadius: '8px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                  <input type="checkbox" checked={form.autoShortlist} onChange={e => setForm(p => ({ ...p, autoShortlist: e.target.checked }))} style={{ width: '18px', height: '18px' }} />
+                  🤖 Auto-Shortlist Students
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
+                  <input type="checkbox" checked={form.sendEmailAlert} onChange={e => setForm(p => ({ ...p, sendEmailAlert: e.target.checked }))} style={{ width: '18px', height: '18px' }} />
+                  📧 Send Email to Eligible Students
+                </label>
+              </div>
+
+              <button onClick={addDrive} style={{ width: '100%', padding: '15px', fontSize: '16px', fontWeight: 'bold', background: '#2c3e50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+                Save & Create Drive
+              </button>
             </div>
+
             <div className="profile-card">
               <h3>Existing Drives</h3>
               {drives.map((d,i) => (
                 <div className="content-item" key={i}>
                   <div className="ci-text">
                     <h4>{d.company} — {d.role}</h4>
-                    <p>📅 {d.date} • {d.students.length} applicants • Status: {d.status}</p>
+                    <p>📅 {d.date} • {d.students.length} applicants • Status: <span style={{fontWeight:'bold', color: d.status==='Closed'?'red':'green'}}>{d.status}</span></p>
                   </div>
                   <div className="ci-actions">
                     <button className="action-btn btn-view" onClick={() => openFunnel(d.id)}>View Funnel</button>
@@ -317,7 +445,7 @@ export default function TpoDashboard({ user, onLogout }) {
           </div>
         )}
 
-        {tab === 'tpo-applications' && (  // New Applications tab
+        {tab === 'tpo-applications' && (
           <div>
             <div className="dash-topbar"><h1>Student Applications</h1><p>Review applications for your drives</p></div>
             {applications.length === 0 ? (

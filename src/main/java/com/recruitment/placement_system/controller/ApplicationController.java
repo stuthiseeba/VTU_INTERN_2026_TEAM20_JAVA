@@ -30,7 +30,7 @@ public class ApplicationController {
     private PatDriveRepository patDriveRepository;
 
     @Autowired
-    private StudentProfileRepository studentProfileRepository; // ✅ NEW: Need this to check student department
+    private StudentProfileRepository studentProfileRepository;
 
     // ✅ Apply for a drive
     @PostMapping
@@ -103,10 +103,19 @@ public class ApplicationController {
         response.put("driveId", drive.getId());
         response.put("company", drive.getCompany());
         response.put("role", drive.getRole());
+        
+        // Added new fields for the frontend to display
+        response.put("jobType", drive.getJobType());
+        response.put("ctc", drive.getCtc());
+        
         response.put("driveDate", drive.getDriveDate());
         response.put("driveTime", drive.getDriveTime());
         response.put("venue", drive.getVenue());
-        response.put("eligibility", drive.getEligibility());
+        
+        // Replaced old generic 'getEligibility' with the new structured fields
+        response.put("minCgpa", drive.getMinCgpa());
+        response.put("eligibleBranches", drive.getEligibleBranches());
+        
         response.put("rounds", drive.getRounds());
         response.put("driveStatus", drive.getStatus());
         response.put("stage", application.getStage());

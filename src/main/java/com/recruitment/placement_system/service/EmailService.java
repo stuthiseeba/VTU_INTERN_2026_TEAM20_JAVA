@@ -92,6 +92,32 @@ public class EmailService {
             handleDeliveryFailure("Password reset email", toEmail, resetToken, e);
         }
     }
+    // ✅ NEW: Method to send Drive Notifications
+    public void sendDriveNotificationEmail(String toEmail, String studentName, String company, String role, String date, String deadline) {
+        try {
+            ensureMailConfigured();
+
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("🚀 New Placement Drive: " + company);
+            message.setText(
+                "Hello " + studentName + ",\n\n" +
+                "Great news! A new placement drive matching your profile has just been announced.\n\n" +
+                "🏢 Company: " + company + "\n" +
+                "💼 Role: " + role + "\n" +
+                "📅 Drive Date: " + (date != null ? date : "TBA") + "\n" +
+                "⏳ Apply Deadline: " + (deadline != null ? deadline : "TBA") + "\n\n" +
+                "Log in to the Placement Portal now to view more details and submit your application!\n\n" +
+                "Best of luck,\n" +
+                "Placement Cell (Team 20)"
+            );
+            mailSender.send(message);
+            System.out.println("Drive alert email sent to: " + toEmail);
+        } catch (Exception e) {
+            System.err.println("Failed to send drive email to " + toEmail + ": " + e.getMessage());
+        }
+    }
 
     private void ensureMailConfigured() {
         if (fromEmail == null || fromEmail.isBlank() || mailPassword == null || mailPassword.isBlank()) {

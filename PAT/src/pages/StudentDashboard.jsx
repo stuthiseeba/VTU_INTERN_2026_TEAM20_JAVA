@@ -2,16 +2,15 @@ import { useState, useEffect } from "react";
 
 const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AIML", "DS"];
 
-function AppliedDrives({ userId, userEmail }) {
+function AppliedDrives({ userId, userEmail, reloadTick }) {
   const [applications, setApplications] = useState([]);
 
   useEffect(() => {
-    // Fetch applied drives from backend
     fetch(`http://localhost:8080/applications/student/${userId}/applied`)
       .then(r => r.json())
       .then(data => setApplications(Array.isArray(data) ? data : []))
       .catch(() => {});
-  }, [userId]);
+  }, [userId, reloadTick]); // Added reloadTick so it updates when a new app is submitted
 
   async function deleteApplication(app) {
     if (!window.confirm(`Delete your application to ${app.company}? This cannot be undone.`)) return;
@@ -33,14 +32,22 @@ function AppliedDrives({ userId, userEmail }) {
           <div className="content-item" key={a.applicationId || i} style={{ flexDirection: 'column', gap: 8 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 800, color: '#1a0e06', marginBottom: 6 }}>
+                <h4 style={{ fontSize: 18, fontWeight: 800, color: '#1a0e06', marginBottom: 6 }}>
                   {a.company}{a.role ? ' — ' + a.role : ''}
                 </h4>
-                <p style={{ fontSize: 13, color: '#6b5a4e', marginBottom: 3 }}>
+                
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold' }}>
+                   {a.jobType && <span style={{ color: '#0056b3', background: '#e2eef9', padding: '4px 8px', borderRadius: '4px' }}>💼 {a.jobType}</span>}
+                   {a.ctc && <span style={{ color: '#155724', background: '#d4edda', padding: '4px 8px', borderRadius: '4px' }}>💰 {a.ctc} LPA</span>}
+                </div>
+
+                <p style={{ fontSize: 13, color: '#6b5a4e', marginBottom: 5 }}>
                   📅 {a.driveDate}{a.driveTime ? '  ⏰ ' + a.driveTime : ''}{a.venue ? '  📍 ' + a.venue : ''}
                 </p>
-                {a.eligibility && <p style={{ fontSize: 13, color: '#6b5a4e' }}>✅ {a.eligibility}</p>}
-                <p style={{ fontSize: 12, color: '#aaa', marginTop: 4 }}>Applied on: {new Date().toLocaleDateString()}</p>
+                <p style={{ fontSize: 13, color: '#6b5a4e', marginBottom: 0 }}>
+                  {a.minCgpa && <span style={{marginRight: '15px'}}>🎓 Min CGPA: {a.minCgpa}</span>}
+                  {a.rounds && <span>🔄 Rounds: {a.rounds}</span>}
+                </p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
                 <span className={`badge badge-${(a.applicationStatus || "applied").toLowerCase()}`}>{a.applicationStatus || "Applied"}</span>
@@ -54,14 +61,13 @@ function AppliedDrives({ userId, userEmail }) {
   );
 }
 
-function AvailableDrives({ userId, userName, userEmail }) {
+function AvailableDrives({ userId, userName, userEmail, onApplicationSuccess }) {
   const [drives, setDrives] = useState([]);
-  const [applying, setApplying] = useState(null); // drive being applied to
-  const [appData, setAppData] = useState(null);   // editable copy of profile
+  const [applying, setApplying] = useState(null); 
+  const [appData, setAppData] = useState(null);   
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
-    // Fetch available drives for this student
     fetch(`http://localhost:8080/applications/student/${userId}/available`)
       .then(r => r.json())
       .then(data => setDrives(Array.isArray(data) ? data : []))
@@ -69,58 +75,39 @@ function AvailableDrives({ userId, userName, userEmail }) {
   }, [userId, reloadTick]);
 
   function openApply(drive) {
-    // fetch original profile, make a local copy for this drive only
     fetch(`http://localhost:8080/api/student/profile/${userId}`)
       .then(r => r.json())
       .then(d => {
         setAppData({
-          name: d.name || userName || '',
-          email: d.email || userEmail || '',
-          phone: d.phone || '',
-          linkedin: d.linkedin || '',
-          address: d.address || '',
-          gradYear: d.gradYear || '',
-          cgpa: d.cgpa || '',
-          department: d.department || '',
-          college: d.college || '',
-          degreeName: d.degreeName || '',
-          specialization: d.specialization || '',
-          yearDegree: d.yearDegree || '',
-          softSkills: d.softSkills || '',
-          techSkills: d.techSkills || ''
+          name: d.name || userName || '', email: d.email || userEmail || '', phone: d.phone || '',
+          linkedin: d.linkedin || '', address: d.address || '', gradYear: d.gradYear || '',
+          cgpa: d.cgpa || '', department: d.department || '', college: d.college || '',
+          degreeName: d.degreeName || '', specialization: d.specialization || '', yearDegree: d.yearDegree || '',
+          softSkills: d.softSkills || '', techSkills: d.techSkills || ''
         });
         setApplying(drive);
       })
-      .catch(() => {
-        alert("Failed to load profile. Please complete your profile first.");
-      });
+      .catch(() => alert("Failed to load profile. Please complete your profile first."));
   }
 
-  function f(field) {
-    return { value: appData[field], onChange: e => setAppData(p => ({ ...p, [field]: e.target.value })) };
-  }
+  function f(field) { return { value: appData[field], onChange: e => setAppData(p => ({ ...p, [field]: e.target.value })) }; }
 
   async function submitApplication() {
     try {
       const res = await fetch("http://localhost:8080/applications", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          studentId: userId, 
-          driveId: applying.id, 
-          stage: 'Applied', 
-          status: 'Pending' 
-        })
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentId: userId, driveId: applying.id, stage: 'Applied', status: 'Pending' })
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "Failed to submit application.");
       alert(`Application submitted to ${applying.company}! Good luck!`);
+      
       setApplying(null);
       setAppData(null);
       setReloadTick(prev => prev + 1);
-    } catch (error) {
-      alert(error.message || "Failed to submit application. Please try again.");
-    }
+      if (onApplicationSuccess) onApplicationSuccess(); // Tell the dashboard to update overview stats
+      
+    } catch (error) { alert(error.message || "Failed to submit application. Please try again."); }
   }
 
   if (applying && appData) {
@@ -134,15 +121,25 @@ function AvailableDrives({ userId, userName, userEmail }) {
           <button className="action-btn btn-view" style={{ padding:'10px 20px', fontSize:13 }} onClick={() => setApplying(null)}>← Back</button>
         </div>
 
-        <div className="profile-card">
-          <h3>Drive Details</h3>
-          <div style={{ display:'flex', gap:24, flexWrap:'wrap', fontSize:14, color:'#1a0e06' }}>
-            <span>📅 {applying.driveDate}</span>
-            {applying.driveTime && <span>⏰ {applying.driveTime}</span>}
-            {applying.venue && <span>📍 {applying.venue}</span>}
-            {applying.eligibility && <span>✅ {applying.eligibility}</span>}
-            {applying.rounds && <span>🔄 {applying.rounds}</span>}
+        <div className="profile-card" style={{ background: '#f8fafc', borderLeft: '4px solid #2c3e50' }}>
+          <h3 style={{ borderBottom: '1px solid #e2e8f0', paddingBottom: '10px', marginBottom: '15px' }}>Job & Drive Details</h3>
+          <div style={{ display:'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', fontSize: '14px', color:'#334155' }}>
+            <div><strong>🏢 Type:</strong> {applying.companyType || 'N/A'}</div>
+            <div><strong>💼 Role:</strong> {applying.jobType || 'N/A'}</div>
+            <div><strong>💰 CTC:</strong> {applying.ctc ? applying.ctc + ' LPA' : 'N/A'} {applying.stipend ? `(Stipend: ₹${applying.stipend}/mo)` : ''}</div>
+            <div><strong>📍 Location:</strong> {applying.location || 'N/A'}</div>
+            <div><strong>📅 Date:</strong> {applying.driveDate || 'N/A'} {applying.driveTime ? `at ${applying.driveTime}` : ''}</div>
+            <div><strong>💻 Mode:</strong> {applying.driveMode || 'N/A'} {applying.venue ? `(${applying.venue})` : ''}</div>
+            <div><strong>🎓 Min CGPA:</strong> {applying.minCgpa || 'No Limit'}</div>
+            <div><strong>📝 Rounds:</strong> {applying.rounds || 'N/A'}</div>
+            <div><strong>⏳ Deadline:</strong> <span style={{color: '#e11d48', fontWeight: 'bold'}}>{applying.registrationDeadline || 'N/A'}</span></div>
+            <div><strong>📜 Bond:</strong> {applying.bondDetails || 'None'}</div>
           </div>
+          {applying.jdLink && (
+            <div style={{ marginTop: '15px', paddingTop: '10px', borderTop: '1px dashed #cbd5e1' }}>
+              <a href={applying.jdLink} target="_blank" rel="noreferrer" style={{ color: '#2563eb', textDecoration: 'none', fontWeight: 'bold' }}>🔗 View Detailed Job Description</a>
+            </div>
+          )}
         </div>
 
         <div className="profile-card">
@@ -163,13 +160,7 @@ function AvailableDrives({ userId, userName, userEmail }) {
             <div className="form-field"><label>CGPA</label><input type="text" {...f('cgpa')} placeholder="e.g. 8.5" /></div>
             <div className="form-field">
               <label>Department</label>
-              <input 
-                type="text" 
-                value={appData.department || ''} 
-                readOnly 
-                style={{ backgroundColor: '#e9ecef', color: '#6c757d', cursor: 'not-allowed' }}
-                title="Your department is locked for this application based on your profile."
-              />
+              <input type="text" value={appData.department || ''} readOnly style={{ backgroundColor: '#e9ecef', color: '#6c757d', cursor: 'not-allowed' }} title="Your department is locked for this application based on your profile." />
             </div>
             <div className="form-field"><label>College</label><input type="text" {...f('college')} placeholder="College name" /></div>
             <div className="form-field"><label>Degree</label><input type="text" {...f('degreeName')} placeholder="e.g. B.Tech" /></div>
@@ -207,16 +198,26 @@ function AvailableDrives({ userId, userName, userEmail }) {
           <div className="content-item" key={d.id} style={{ flexDirection: 'column', gap: 10 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', width: '100%' }}>
               <div>
-                <h4 style={{ fontSize: 16, fontWeight: 800, color: '#1a0e06', marginBottom: 6 }}>
+                <h4 style={{ fontSize: 18, fontWeight: 800, color: '#1a0e06', marginBottom: 6 }}>
                   {d.company}{d.role ? ' — ' + d.role : ''}
                 </h4>
+                
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px', fontSize: '12px', fontWeight: 'bold' }}>
+                  {d.jobType && <span style={{ background: '#f0f4f8', color: '#0056b3', padding: '4px 8px', borderRadius: '6px' }}>💼 {d.jobType}</span>}
+                  {d.ctc && <span style={{ background: '#e6f4ea', color: '#155724', padding: '4px 8px', borderRadius: '6px' }}>💰 {d.ctc} LPA</span>}
+                  {d.driveMode && <span style={{ background: '#fef5e5', color: '#856404', padding: '4px 8px', borderRadius: '6px' }}>💻 Mode: {d.driveMode}</span>}
+                  {d.registrationDeadline && <span style={{ background: '#fce8e6', color: '#c5221f', padding: '4px 8px', borderRadius: '6px' }}>⏳ Deadline: {d.registrationDeadline}</span>}
+                </div>
+
                 <p style={{ fontSize: 13, color: '#6b5a4e', marginBottom: 3 }}>
-                  📅 {d.driveDate}{d.driveTime ? '  ⏰ ' + d.driveTime : ''}{d.venue ? '  📍 ' + d.venue : ''}
+                  📅 Date: {d.driveDate}{d.driveTime ? '  ⏰ ' + d.driveTime : ''}{d.venue ? '  📍 ' + d.venue : ''}
                 </p>
-                {d.eligibility && <p style={{ fontSize: 13, color: '#6b5a4e', marginBottom: 3 }}>✅ Eligibility: {d.eligibility}</p>}
-                {d.rounds && <p style={{ fontSize: 13, color: '#6b5a4e' }}>🔄 Rounds: {d.rounds}</p>}
+                <p style={{ fontSize: 13, color: '#6b5a4e', marginBottom: 0 }}>
+                  {d.minCgpa && <span style={{marginRight: '15px'}}>🎓 Min CGPA: {d.minCgpa}</span>}
+                  {d.eligibleBranches && <span style={{marginRight: '15px'}}>📚 Branches: {d.eligibleBranches}</span>}
+                </p>
               </div>
-              <button className="save-btn" style={{ marginTop: 0, padding: '8px 22px', fontSize: 13 }} onClick={() => openApply(d)}>Apply</button>
+              <button className="save-btn" style={{ marginTop: 0, padding: '10px 24px', fontSize: 14 }} onClick={() => openApply(d)}>View & Apply</button>
             </div>
           </div>
         ))
@@ -232,8 +233,13 @@ export default function StudentDashboard({ user, onLogout }) {
   const [techSkills, setTechSkills] = useState([]);
   const [softInput, setSoftInput] = useState("");
   const [techInput, setTechInput] = useState("");
+  
+  // ✅ NEW: State to hold applications for the Overview tab
+  const [overviewApps, setOverviewApps] = useState([]);
+  const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
+    // Load student profile
     fetch(`http://localhost:8080/api/student/profile/${user.userId}`)
       .then(r => r.json())
       .then(d => {
@@ -242,9 +248,14 @@ export default function StudentDashboard({ user, onLogout }) {
         if (d.softSkills) setSoftSkills(d.softSkills.split(",").filter(Boolean));
         if (d.techSkills) setTechSkills(d.techSkills.split(",").filter(Boolean));
       }).catch(() => {});
-  }, [user.userId]);
-  
 
+    // ✅ NEW: Load applied drives for Overview dashboard stats
+    fetch(`http://localhost:8080/applications/student/${user.userId}/applied`)
+      .then(r => r.json())
+      .then(data => setOverviewApps(Array.isArray(data) ? data : []))
+      .catch(() => {});
+  }, [user.userId, reloadTick]);
+  
   async function saveProfile() {
     const body = { userId: user.userId, ...profile, softSkills: softSkills.join(","), techSkills: techSkills.join(",") };
     try {
@@ -277,13 +288,36 @@ export default function StudentDashboard({ user, onLogout }) {
         {tab === 'overview' && (
           <div>
             <div className="dash-topbar"><div><h1>Welcome back, {user.name?.split(' ')}</h1><p>Here's your placement activity summary</p></div></div>
+            
+            {/* ✅ DYNAMIC STATS */}
             <div className="stat-cards">
-              <div className="stat-card"><div className="stat-val">0</div><div className="stat-label">Drives Applied</div></div>
-              <div className="stat-card"><div className="stat-val">0</div><div className="stat-label">Interviews Scheduled</div></div>
-              <div className="stat-card"><div className="stat-val">0</div><div className="stat-label">Offers Received</div></div>
-              <div className="stat-card"><div className="stat-val">0</div><div className="stat-label">Feedback Pending</div></div>
+              <div className="stat-card"><div className="stat-val">{overviewApps.length}</div><div className="stat-label">Drives Applied</div></div>
+              <div className="stat-card"><div className="stat-val">{overviewApps.filter(a => a.stage && a.stage !== 'Applied').length}</div><div className="stat-label">Interviews Scheduled</div></div>
+              <div className="stat-card"><div className="stat-val">{overviewApps.filter(a => a.applicationStatus === 'Selected').length}</div><div className="stat-label">Offers Received</div></div>
+              <div className="stat-card"><div className="stat-val">{overviewApps.filter(a => a.applicationStatus === 'Pending').length}</div><div className="stat-label">Feedback Pending</div></div>
             </div>
-            <div className="profile-card"><h3>Recent Activity</h3><div className="empty-state"><div className="e-icon">📭</div><p>No recent activity yet. Start by completing your profile.</p></div></div>
+
+            {/* ✅ DYNAMIC RECENT ACTIVITY */}
+            <div className="profile-card">
+              <h3>Recent Activity</h3>
+              {overviewApps.length === 0 ? (
+                <div className="empty-state"><div className="e-icon">📭</div><p>No recent applications yet. Go to "Available Drives" to start applying!</p></div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginTop: '15px' }}>
+                  {overviewApps.slice(0, 4).map((app, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid #eee' }}>
+                      <div>
+                        <strong>You applied for {app.company}</strong>
+                        <div style={{ fontSize: '12px', color: '#666', marginTop: '4px' }}>{app.role || 'Placement Drive'}</div>
+                      </div>
+                      <span className={`badge badge-${(app.applicationStatus || "applied").toLowerCase()}`}>
+                        {app.applicationStatus || "Applied"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -395,8 +429,8 @@ export default function StudentDashboard({ user, onLogout }) {
           </div>
         )}
 
-        {tab === 'drives' && <AppliedDrives userId={user.userId} userEmail={user.email} />}
-        {tab === 'available' && <AvailableDrives userId={user.userId} userName={user.name} userEmail={user.email} />}
+        {tab === 'drives' && <AppliedDrives userId={user.userId} userEmail={user.email} reloadTick={reloadTick} />}
+        {tab === 'available' && <AvailableDrives userId={user.userId} userName={user.name} userEmail={user.email} onApplicationSuccess={() => setReloadTick(p => p + 1)} />}
       </div>
     </div>
   );
