@@ -22,13 +22,13 @@ A complete backend REST API system for managing campus recruitment drives, stude
 
 The Recruitment Drive Management System is a Spring Boot backend application integrated with a React frontend that enables:
 
-- Secure user registration with **OTP-based email verification** and login via JWT tokens (Team 1)
-- Creation, updating, and deletion of recruitment drives (Team 2)
-- Eligibility Engine — filters students based on CGPA, branch, graduation year, and skills (Team 2)
-- Student application workflow with stage tracking (Team 2)
-- Conversion Ratio Metrics — applicants vs selected, round-wise percentages (Team 2)
-- React frontend with **React Router** — dedicated URLs per page (Team 3)
-- **Dark / Light theme toggle** — charcoal grey dark mode, persisted across sessions (Team 3)
+- Secure user registration with **OTP-based email verification** and login via JWT tokens 
+- Creation, updating, and deletion of recruitment drives 
+- Eligibility Engine — filters students based on CGPA, branch, graduation year, and skills 
+- Student application workflow with stage tracking 
+- Conversion Ratio Metrics — applicants vs selected, round-wise percentages 
+- React frontend with **React Router** — dedicated URLs per page 
+- **Dark / Light theme toggle** — charcoal grey dark mode, persisted across sessions 
 - Role-based access control: STUDENT, COORDINATOR, TPO, ADMIN, HR
 
 ---
