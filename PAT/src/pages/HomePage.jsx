@@ -4,10 +4,7 @@ export default function HomePage({ onGoToInfo, onGoToLogin }) {
       <div className="navbar">
         <div className="logo">Placement<span>Portal</span></div>
         <nav>
-          <a>Home</a>
-          <a>Programs</a>
-          <a>Circulars</a>
-          <a>Contact</a>
+          <a onClick={() => onGoToInfo('contact')}>Contact</a>
           <div className="nav-login-wrap">
             <button className="nav-btn">Login ▾</button>
             <div className="login-dropdown">

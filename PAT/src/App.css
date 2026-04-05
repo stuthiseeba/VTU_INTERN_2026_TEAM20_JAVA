@@ -333,6 +333,40 @@ body { background: #fff8f0; color: #2d1a0e; }
 [data-theme="dark"] .empty-state { color: #888; }
 [data-theme="dark"] .empty-state p { color: #888; }
 
+/* Fix for drive form inputs in dark theme */
+[data-theme="dark"] .add-content-form input,
+[data-theme="dark"] .add-content-form select,
+[data-theme="dark"] .add-content-form textarea {
+  background: #2d2d2d;
+  border-color: #444;
+  color: #e0e0e0;
+}
+
+[data-theme="dark"] .add-content-form input:focus,
+[data-theme="dark"] .add-content-form select:focus {
+  background: #1e1e1e;
+  border-color: #ff6b35;
+  outline: none;
+}
+
+[data-theme="dark"] .add-content-form h3 {
+  color: #ff8b5a;
+}
+
+[data-theme="dark"] .add-content-form h5 {
+  color: #bbb;
+  border-bottom-color: #444 !important;
+}
+
+[data-theme="dark"] .add-content-form label {
+  color: #bbb;
+}
+
+
+[data-theme="dark"] {
+  --pill-bg: #2d2d2d;
+  --border-color: #444;
+}
 /* Dark Mode Theme Toggle Button Overrides */
 [data-theme="dark"] .theme-toggle {
   background: #1e1e1e;

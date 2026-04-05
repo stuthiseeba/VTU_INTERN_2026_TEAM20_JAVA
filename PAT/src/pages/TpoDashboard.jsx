@@ -212,67 +212,67 @@ export default function TpoDashboard({ user, onLogout }) {
           <div>
             <div className="dash-topbar"><div><h1>Manage Drives</h1><p>Create and manage placement drives</p></div></div>
             
-            <div className="add-content-form" style={{ padding: '20px', background: '#fff', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)', marginBottom: '30px' }}>
-              <h3 style={{ marginBottom: '20px', color: '#333' }}>🚀 Create New Placement Drive</h3>
+            <div className="add-content-form" style={{ padding: '20px', borderRadius: '10px', marginBottom: '30px' }}>
+              <h3 style={{ marginBottom: '20px', color: '#333' }}> Create New Placement Drive</h3>
               
               {/* SECTION 1: Basic Info */}
-              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>1. Basic Information</h5>
+              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: 'inherit' }}>Basic Information</h5>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
-                <input type="text" placeholder="Company Name" value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
-                <input type="text" placeholder="Role (e.g. SDE)" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
-                
-                <select value={form.jobType} onChange={e => setForm(p => ({ ...p, jobType: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
+                <input type="text" placeholder="Company Name" value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
+                                <input type="text" placeholder="Role (e.g. SDE)" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} style={{ padding: '10px',borderRadius: '5px' }} />
+
+                <select value={form.jobType} onChange={e => setForm(p => ({ ...p, jobType: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }}>
                   <option value="Full-time">Full-time</option>
                   <option value="Internship">Internship</option>
                   <option value="Internship + PPO">Internship + PPO</option>
                 </select>
                 
-                <select value={form.companyType} onChange={e => setForm(p => ({ ...p, companyType: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
+                <select value={form.companyType} onChange={e => setForm(p => ({ ...p, companyType: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }}>
                   <option value="Product-based">Product-based</option>
                   <option value="Service-based">Service-based</option>
                   <option value="Startup">Startup</option>
                 </select>
 
-                <input type="number" placeholder="CTC (LPA)" step="0.1" value={form.ctc} onChange={e => setForm(p => ({ ...p, ctc: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
-                <input type="number" placeholder="Stipend (per month)" value={form.stipend} onChange={e => setForm(p => ({ ...p, stipend: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
-                <input type="text" placeholder="Location (City)" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+                <input type="number" placeholder="CTC (LPA)" step="0.1" value={form.ctc} onChange={e => setForm(p => ({ ...p, ctc: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
+                <input type="number" placeholder="Stipend (per month)" value={form.stipend} onChange={e => setForm(p => ({ ...p, stipend: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
+                <input type="text" placeholder="Location (City)" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} style={{ padding: '10px',borderRadius: '5px' }} />
               </div>
 
               {/* SECTION 2: Drive Details */}
-              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>2. Drive Details</h5>
+              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: 'inherit' }}>Drive Details</h5>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
                 <div>
-                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Drive Date</label>
-                   <input type="date" value={form.driveDate} onChange={e => setForm(p => ({ ...p, driveDate: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Drive Date</label>
+                   <input type="date" value={form.driveDate} onChange={e => setForm(p => ({ ...p, driveDate: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Time</label>
-                   <input type="time" value={form.driveTime} onChange={e => setForm(p => ({ ...p, driveTime: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Time</label>
+                   <input type="time" value={form.driveTime} onChange={e => setForm(p => ({ ...p, driveTime: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Mode of Drive</label>
-                   <select value={form.driveMode} onChange={e => setForm(p => ({ ...p, driveMode: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }}>
+                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Mode of Drive</label>
+                   <select value={form.driveMode} onChange={e => setForm(p => ({ ...p, driveMode: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }}>
                      <option value="Online">Online</option>
                      <option value="Offline">Offline</option>
                      <option value="Hybrid">Hybrid</option>
                    </select>
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Venue / Link</label>
-                   <input type="text" placeholder="Venue or Meet Link" value={form.venue} onChange={e => setForm(p => ({ ...p, venue: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Venue / Link</label>
+                   <input type="text" placeholder="Venue or Meet Link" value={form.venue} onChange={e => setForm(p => ({ ...p, venue: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
               </div>
 
               {/* SECTION 3: Eligibility */}
-              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>3. Eligibility & Auto-Filtering</h5>
+              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: 'inherit' }}>3. Eligibility & Auto-Filtering</h5>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
-                <input type="number" placeholder="Min CGPA (e.g. 7.5)" step="0.1" value={form.minCgpa} onChange={e => setForm(p => ({ ...p, minCgpa: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
-                <input type="number" placeholder="Max Backlogs Allowed" min="0" value={form.maxBacklogs} onChange={e => setForm(p => ({ ...p, maxBacklogs: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
-                <input type="number" placeholder="10th % (Optional)" step="0.1" value={form.tenthPercent} onChange={e => setForm(p => ({ ...p, tenthPercent: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
-                <input type="number" placeholder="12th/Diploma % (Optional)" step="0.1" value={form.twelfthPercent} onChange={e => setForm(p => ({ ...p, twelfthPercent: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
-                <input type="number" placeholder="Allowed Gap Years" min="0" value={form.gapYears} onChange={e => setForm(p => ({ ...p, gapYears: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }} />
+                <input type="number" placeholder="Min CGPA (e.g. 7.5)" step="0.1" value={form.minCgpa} onChange={e => setForm(p => ({ ...p, minCgpa: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
+                <input type="number" placeholder="Max Backlogs Allowed" min="0" value={form.maxBacklogs} onChange={e => setForm(p => ({ ...p, maxBacklogs: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
+                <input type="number" placeholder="10th % (Optional)" step="0.1" value={form.tenthPercent} onChange={e => setForm(p => ({ ...p, tenthPercent: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
+                <input type="number" placeholder="12th/Diploma % (Optional)" step="0.1" value={form.twelfthPercent} onChange={e => setForm(p => ({ ...p, twelfthPercent: e.target.value }))} style={{ padding: '10px',borderRadius: '5px' }} />
+                <input type="number" placeholder="Allowed Gap Years" min="0" value={form.gapYears} onChange={e => setForm(p => ({ ...p, gapYears: e.target.value }))} style={{ padding: '10px',borderRadius: '5px' }} />
                 
-                <select value={form.yearAllowed} onChange={e => setForm(p => ({ ...p, yearAllowed: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px' }}>
+                <select value={form.yearAllowed} onChange={e => setForm(p => ({ ...p, yearAllowed: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }}>
                   <option value="3rd year">3rd year</option>
                   <option value="4th year">4th year</option>
                   <option value="Both">Both (3rd & 4th)</option>
@@ -299,10 +299,10 @@ export default function TpoDashboard({ user, onLogout }) {
               </div>
 
               {/* SECTION 4: Process */}
-              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>4. Selection Process</h5>
+              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: 'inherit' }}>4. Selection Process</h5>
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '25px' }}>
                 {PROCESS_ROUNDS.map(round => (
-                  <label key={round} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer', background: '#f5f7fb', padding: '8px 12px', borderRadius: '20px' }}>
+                  <label key={round} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer', background: 'var(--pill-bg, #f5f7fb)', padding: '8px 12px', borderRadius: '20px' }}>
                     <input 
                       type="checkbox" 
                       checked={form.rounds?.includes(round)} 
@@ -317,29 +317,29 @@ export default function TpoDashboard({ user, onLogout }) {
               </div>
 
               {/* SECTION 5 & 6: Deadlines and Extras */}
-              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>5. Deadlines & Links</h5>
+              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: 'inherit' }}>5. Deadlines & Links</h5>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
                 <div>
-                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Registration Deadline</label>
-                   <input type="date" value={form.registrationDeadline} onChange={e => setForm(p => ({ ...p, registrationDeadline: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                  <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Registration Deadline</label>
+                   <input type="date" value={form.registrationDeadline} onChange={e => setForm(p => ({ ...p, registrationDeadline: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Result Date (Expected)</label>
-                   <input type="date" value={form.resultDate} onChange={e => setForm(p => ({ ...p, resultDate: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Result Date (Expected)</label>
+                   <input type="date" value={form.resultDate} onChange={e => setForm(p => ({ ...p, resultDate: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>Bond Details</label>
-                   <input type="text" placeholder="e.g. Yes - 2 Years" value={form.bondDetails} onChange={e => setForm(p => ({ ...p, bondDetails: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Bond Details</label>
+                   <input type="text" placeholder="e.g. Yes - 2 Years" value={form.bondDetails} onChange={e => setForm(p => ({ ...p, bondDetails: e.target.value }))} style={{ padding: '10px',  borderRadius: '5px', width: '100%' }} />
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: '#666', display:'block', marginBottom:'5px'}}>JD / Apply Link</label>
-                   <input type="url" placeholder="https://..." value={form.jdLink} onChange={e => setForm(p => ({ ...p, jdLink: e.target.value }))} style={{ padding: '10px', border: '1px solid #ccc', borderRadius: '5px', width: '100%' }} />
+                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>JD / Apply Link</label>
+                   <input type="url" placeholder="https://..." value={form.jdLink} onChange={e => setForm(p => ({ ...p, jdLink: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
               </div>
 
               {/* SECTION 7: Smart Automation */}
-              <h5 style={{ borderBottom: '2px solid #eee', paddingBottom: '10px', marginBottom: '15px', color: '#555' }}>6. Smart Automation</h5>
-              <div style={{ display: 'flex', gap: '25px', marginBottom: '25px', padding: '15px', background: '#f9fafc', borderRadius: '8px' }}>
+              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: 'inherit' }}>6. Smart Automation</h5>
+              <div style={{ display: 'flex', gap: '25px', marginBottom: '25px', padding: '15px', background: 'var(--pill-bg, #f9fafc)', borderRadius: '8px', border: '1px solid var(--border-color, #eee)' }}>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 'bold' }}>
                   <input type="checkbox" checked={form.autoShortlist} onChange={e => setForm(p => ({ ...p, autoShortlist: e.target.checked }))} style={{ width: '18px', height: '18px' }} />
                   🤖 Auto-Shortlist Students
