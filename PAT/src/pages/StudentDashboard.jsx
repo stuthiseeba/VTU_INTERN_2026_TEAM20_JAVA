@@ -2,6 +2,30 @@ import { useState, useEffect } from "react";
 
 const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AIML", "DS"];
 
+function calculateProfileCompletion(profile, softSkills, techSkills) {
+  const requiredFields = [
+    'phone', 'address', 'gradYear',           // Personal
+    'cgpa', 'department', 'college',           // Academic
+    'school10', 'score10', 'year10',           // 10th
+    'school12', 'score12', 'year12',           // 12th
+    'degreeName', 'specialization', 'yearDegree', // Degree
+    'aadharNumber'                              // Identification
+  ];
+
+  const filledCount = requiredFields.filter(
+    f => profile[f] && String(profile[f]).trim() !== ''
+  ).length;
+
+  const softOk  = softSkills.length  > 0 ? 1 : 0;
+  const techOk  = techSkills.length  > 0 ? 1 : 0;
+  const total   = requiredFields.length + 2;   // 16 fields + 2 skill checks = 18
+  const filled  = filledCount + softOk + techOk;
+
+  return Math.round((filled / total) * 100);
+}
+
+// Applied Drives
+
 function AppliedDrives({ userId, userEmail, reloadTick }) {
   const [applications, setApplications] = useState([]);
 
@@ -10,7 +34,7 @@ function AppliedDrives({ userId, userEmail, reloadTick }) {
       .then(r => r.json())
       .then(data => setApplications(Array.isArray(data) ? data : []))
       .catch(() => {});
-  }, [userId, reloadTick]); // Added reloadTick so it updates when a new app is submitted
+  }, [userId, reloadTick]);
 
   async function deleteApplication(app) {
     if (!window.confirm(`Delete your application to ${app.company}? This cannot be undone.`)) return;
@@ -35,12 +59,10 @@ function AppliedDrives({ userId, userEmail, reloadTick }) {
                 <h4 style={{ fontSize: 18, fontWeight: 800, color: '#1a0e06', marginBottom: 6 }}>
                   {a.company}{a.role ? ' — ' + a.role : ''}
                 </h4>
-                
                 <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', marginBottom: '8px', fontSize: '13px', fontWeight: 'bold' }}>
                    {a.jobType && <span style={{ color: '#0056b3', background: '#e2eef9', padding: '4px 8px', borderRadius: '4px' }}>💼 {a.jobType}</span>}
                    {a.ctc && <span style={{ color: '#155724', background: '#d4edda', padding: '4px 8px', borderRadius: '4px' }}>💰 {a.ctc} LPA</span>}
                 </div>
-
                 <p style={{ fontSize: 13, color: '#6b5a4e', marginBottom: 5 }}>
                   📅 {a.driveDate}{a.driveTime ? '  ⏰ ' + a.driveTime : ''}{a.venue ? '  📍 ' + a.venue : ''}
                 </p>
@@ -61,11 +83,18 @@ function AppliedDrives({ userId, userEmail, reloadTick }) {
   );
 }
 
-function AvailableDrives({ userId, userName, userEmail, onApplicationSuccess }) {
+// ─────────────────────────────────────────────────────────────────────────────
+// Available Drives  ← now receives profile + skills as props for completeness check
+// ─────────────────────────────────────────────────────────────────────────────
+function AvailableDrives({ userId, userName, userEmail, profile, softSkills, techSkills, onApplicationSuccess, onGoToProfile }) {
   const [drives, setDrives] = useState([]);
-  const [applying, setApplying] = useState(null); 
-  const [appData, setAppData] = useState(null);   
+  const [applying, setApplying] = useState(null);
+  const [appData, setAppData] = useState(null);
   const [reloadTick, setReloadTick] = useState(0);
+
+  // ── Calculate profile completeness ──────────────────────────────────────
+  const profilePct = calculateProfileCompletion(profile, softSkills, techSkills);
+  const profileComplete = profilePct === 100;
 
   useEffect(() => {
     fetch(`http://localhost:8080/applications/student/${userId}/available`)
@@ -75,6 +104,13 @@ function AvailableDrives({ userId, userName, userEmail, onApplicationSuccess }) 
   }, [userId, reloadTick]);
 
   function openApply(drive) {
+    // ── Guard: profile must be 100% complete ──────────────────────────────
+    if (!profileComplete) {
+      alert("Your profile is only " + profilePct + "% complete.\nPlease complete your profile before applying for drives.");
+      if (onGoToProfile) onGoToProfile();
+      return;
+    }
+
     fetch(`http://localhost:8080/api/student/profile/${userId}`)
       .then(r => r.json())
       .then(d => {
@@ -101,15 +137,14 @@ function AvailableDrives({ userId, userName, userEmail, onApplicationSuccess }) 
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "Failed to submit application.");
       alert(`Application submitted to ${applying.company}! Good luck!`);
-      
       setApplying(null);
       setAppData(null);
       setReloadTick(prev => prev + 1);
-      if (onApplicationSuccess) onApplicationSuccess(); // Tell the dashboard to update overview stats
-      
+      if (onApplicationSuccess) onApplicationSuccess();
     } catch (error) { alert(error.message || "Failed to submit application. Please try again."); }
   }
 
+  // ── Application form view ────────────────────────────────────────────────
   if (applying && appData) {
     return (
       <div>
@@ -186,12 +221,65 @@ function AvailableDrives({ userId, userName, userEmail, onApplicationSuccess }) 
     );
   }
 
+  // ── Drive list view ───────────────────────────────────────────────────────
   return (
     <div>
       <div className="dash-topbar">
         <div><h1>Available Drives</h1><p>Placement drives open for students</p></div>
         <button className="action-btn btn-view" onClick={() => setReloadTick(prev => prev + 1)}>Refresh</button>
       </div>
+
+      {/* ── Profile Incomplete Warning Banner ──────────────────────────── */}
+      {!profileComplete && (
+        <div style={{
+          background: 'rgba(255, 243, 205, 0.97)',
+          border: '1.5px solid #ffc107',
+          borderLeft: '5px solid #e6a800',
+          borderRadius: 14,
+          padding: '18px 24px',
+          marginBottom: 20,
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          gap: 16,
+          boxShadow: '0 4px 16px rgba(0,0,0,0.10)',
+          backdropFilter: 'blur(8px)',
+        }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 15, color: '#7a4f00', marginBottom: 6 }}>
+              ⚠️ Your profile is only {profilePct}% complete
+            </div>
+            <div style={{ fontSize: 13, color: '#5a3a00' }}>
+              You must have a 100% complete profile to apply for any drive.
+              Fill in your personal info, academic records, Aadhaar, and at least one soft &amp; technical skill.
+            </div>
+            {/* Mini progress bar */}
+            <div style={{ marginTop: 10, background: '#ffe8a0', borderRadius: 6, height: 8, width: 280, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${profilePct}%`, background: 'linear-gradient(90deg,#ff9800,#ffc107)', borderRadius: 6, transition: 'width 0.4s' }} />
+            </div>
+            <div style={{ fontSize: 11, color: '#7a4f00', marginTop: 4 }}>{profilePct}% — need 100% to apply</div>
+          </div>
+          <button
+            onClick={() => { if (onGoToProfile) onGoToProfile(); }}
+            style={{
+              whiteSpace: 'nowrap',
+              padding: '11px 22px',
+              background: 'linear-gradient(135deg, #ff9800, #ffc107)',
+              color: '#fff',
+              border: 'none',
+              borderRadius: 10,
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 14px rgba(255,152,0,0.35)',
+              flexShrink: 0,
+            }}
+          >
+            Complete Profile →
+          </button>
+        </div>
+      )}
+
       {drives.length === 0
         ? <div className="profile-card"><div className="empty-state"><div className="e-icon">🏢</div><p>No drives available right now.</p></div></div>
         : drives.map(d => (
@@ -201,14 +289,12 @@ function AvailableDrives({ userId, userName, userEmail, onApplicationSuccess }) 
                 <h4 style={{ fontSize: 18, fontWeight: 800, color: '#1a0e06', marginBottom: 6 }}>
                   {d.company}{d.role ? ' — ' + d.role : ''}
                 </h4>
-                
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px', fontSize: '12px', fontWeight: 'bold' }}>
                   {d.jobType && <span style={{ background: '#f0f4f8', color: '#0056b3', padding: '4px 8px', borderRadius: '6px' }}>💼 {d.jobType}</span>}
                   {d.ctc && <span style={{ background: '#e6f4ea', color: '#155724', padding: '4px 8px', borderRadius: '6px' }}>💰 {d.ctc} LPA</span>}
                   {d.driveMode && <span style={{ background: '#fef5e5', color: '#856404', padding: '4px 8px', borderRadius: '6px' }}>💻 Mode: {d.driveMode}</span>}
                   {d.registrationDeadline && <span style={{ background: '#fce8e6', color: '#c5221f', padding: '4px 8px', borderRadius: '6px' }}>⏳ Deadline: {d.registrationDeadline}</span>}
                 </div>
-
                 <p style={{ fontSize: 13, color: '#6b5a4e', marginBottom: 3 }}>
                   📅 Date: {d.driveDate}{d.driveTime ? '  ⏰ ' + d.driveTime : ''}{d.venue ? '  📍 ' + d.venue : ''}
                 </p>
@@ -217,7 +303,37 @@ function AvailableDrives({ userId, userName, userEmail, onApplicationSuccess }) 
                   {d.eligibleBranches && <span style={{marginRight: '15px'}}>📚 Branches: {d.eligibleBranches}</span>}
                 </p>
               </div>
-              <button className="save-btn" style={{ marginTop: 0, padding: '10px 24px', fontSize: 14 }} onClick={() => openApply(d)}>View & Apply</button>
+
+              {/* ── Apply / Complete Profile button ─────────────────────── */}
+              {profileComplete ? (
+                <button
+                  className="save-btn"
+                  style={{ marginTop: 0, padding: '10px 24px', fontSize: 14 }}
+                  onClick={() => openApply(d)}
+                >
+                  View &amp; Apply
+                </button>
+              ) : (
+                <button
+                  onClick={() => { if (onGoToProfile) onGoToProfile(); }}
+                  style={{
+                    marginTop: 0,
+                    padding: '10px 20px',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    background: 'linear-gradient(135deg, #ff9800, #ffc107)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 10,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(255,152,0,0.3)',
+                    whiteSpace: 'nowrap',
+                  }}
+                  title="Complete your profile to apply for this drive"
+                >
+                  ✏️ Complete Profile &amp; Apply
+                </button>
+              )}
             </div>
           </div>
         ))
@@ -226,6 +342,9 @@ function AvailableDrives({ userId, userName, userEmail, onApplicationSuccess }) 
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Student Dashboard — main export
+// ─────────────────────────────────────────────────────────────────────────────
 export default function StudentDashboard({ user, onLogout }) {
   const [tab, setTab] = useState("overview");
   const [profile, setProfile] = useState({ phone:'', linkedin:'', address:'', gradYear:'', cgpa:'', department:'', college:'', school10:'', score10:'', year10:'', school12:'', score12:'', year12:'', degreeName:'', specialization:'', yearDegree:'', aadharNumber:'' });
@@ -233,13 +352,10 @@ export default function StudentDashboard({ user, onLogout }) {
   const [techSkills, setTechSkills] = useState([]);
   const [softInput, setSoftInput] = useState("");
   const [techInput, setTechInput] = useState("");
-  
-  // ✅ NEW: State to hold applications for the Overview tab
   const [overviewApps, setOverviewApps] = useState([]);
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
-    // Load student profile
     fetch(`http://localhost:8080/api/student/profile/${user.userId}`)
       .then(r => r.json())
       .then(d => {
@@ -249,23 +365,25 @@ export default function StudentDashboard({ user, onLogout }) {
         if (d.techSkills) setTechSkills(d.techSkills.split(",").filter(Boolean));
       }).catch(() => {});
 
-    // ✅ NEW: Load applied drives for Overview dashboard stats
     fetch(`http://localhost:8080/applications/student/${user.userId}/applied`)
       .then(r => r.json())
       .then(data => setOverviewApps(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, [user.userId, reloadTick]);
-  
+
   async function saveProfile() {
     const body = { userId: user.userId, ...profile, softSkills: softSkills.join(","), techSkills: techSkills.join(",") };
     try {
       const res = await fetch("http://localhost:8080/api/student/profile", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(body) });
-      if (res.ok) alert("Profile saved successfully!");
+      if (res.ok) { alert("Profile saved successfully!"); setReloadTick(t => t + 1); }
       else alert("Failed to save profile.");
     } catch { alert("Cannot connect to server."); }
   }
 
   function p(field) { return { value: profile[field], onChange: e => setProfile(prev => ({ ...prev, [field]: e.target.value })) }; }
+
+  // ── Profile completion for overview display ──────────────────────────────
+  const profilePct = calculateProfileCompletion(profile, softSkills, techSkills);
 
   return (
     <div className="dash-layout">
@@ -285,11 +403,33 @@ export default function StudentDashboard({ user, onLogout }) {
       </div>
 
       <div className="dash-main">
+
+        {/* ── OVERVIEW ───────────────────────────────────────────────────── */}
         {tab === 'overview' && (
           <div>
             <div className="dash-topbar"><div><h1>Welcome back, {user.name?.split(' ')}</h1><p>Here's your placement activity summary</p></div></div>
-            
-            {/* ✅ DYNAMIC STATS */}
+
+            {/* Profile Completion Card — shown on overview if not 100% */}
+            {profilePct < 100 && (
+              <div className="profile-card" style={{ borderLeft: '4px solid #ffc107', background: 'rgba(255,248,225,0.97)' }}>
+                <h3 style={{ color: '#7a4f00' }}>⚠️ Complete Your Profile</h3>
+                <p style={{ fontSize: 14, color: '#5a3a00', marginBottom: 14 }}>
+                  Your profile is <strong>{profilePct}%</strong> complete. You need a 100% complete profile to apply for placement drives.
+                </p>
+                <div style={{ background: '#ffe8a0', borderRadius: 8, height: 10, overflow: 'hidden', marginBottom: 10 }}>
+                  <div style={{ height: '100%', width: `${profilePct}%`, background: 'linear-gradient(90deg,#ff9800,#ffc107)', borderRadius: 8, transition: 'width 0.5s' }} />
+                </div>
+                <div style={{ fontSize: 12, color: '#7a4f00', marginBottom: 14 }}>{profilePct} / 100% — {100 - profilePct}% remaining</div>
+                <button
+                  className="save-btn"
+                  style={{ marginTop: 0, padding: '10px 24px', fontSize: 14 }}
+                  onClick={() => setTab('profile')}
+                >
+                  Go to My Profile →
+                </button>
+              </div>
+            )}
+
             <div className="stat-cards">
               <div className="stat-card"><div className="stat-val">{overviewApps.length}</div><div className="stat-label">Drives Applied</div></div>
               <div className="stat-card"><div className="stat-val">{overviewApps.filter(a => a.stage && a.stage !== 'Applied').length}</div><div className="stat-label">Interviews Scheduled</div></div>
@@ -297,7 +437,6 @@ export default function StudentDashboard({ user, onLogout }) {
               <div className="stat-card"><div className="stat-val">{overviewApps.filter(a => a.applicationStatus === 'Pending').length}</div><div className="stat-label">Feedback Pending</div></div>
             </div>
 
-            {/* ✅ DYNAMIC RECENT ACTIVITY */}
             <div className="profile-card">
               <h3>Recent Activity</h3>
               {overviewApps.length === 0 ? (
@@ -321,6 +460,7 @@ export default function StudentDashboard({ user, onLogout }) {
           </div>
         )}
 
+        {/* ── MY PROFILE ─────────────────────────────────────────────────── */}
         {tab === 'profile' && (
           <div>
             <div className="dash-topbar"><div><h1>My Profile</h1><p>Personal and contact information</p></div></div>
@@ -344,6 +484,7 @@ export default function StudentDashboard({ user, onLogout }) {
           </div>
         )}
 
+        {/* ── ACADEMIC RECORDS ───────────────────────────────────────────── */}
         {tab === 'academic' && (
           <div>
             <div className="dash-topbar"><div><h1>Academic Records</h1><p>Your educational qualifications</p></div></div>
@@ -389,6 +530,7 @@ export default function StudentDashboard({ user, onLogout }) {
           </div>
         )}
 
+        {/* ── IDENTIFICATION ─────────────────────────────────────────────── */}
         {tab === 'identification' && (
           <div>
             <div className="dash-topbar"><div><h1>Identification</h1><p>Your identity documents</p></div></div>
@@ -402,6 +544,7 @@ export default function StudentDashboard({ user, onLogout }) {
           </div>
         )}
 
+        {/* ── SKILLS ─────────────────────────────────────────────────────── */}
         {tab === 'skills' && (
           <div>
             <div className="dash-topbar"><div><h1>Skills & Certificates</h1><p>Your technical and soft skills</p></div></div>
@@ -429,8 +572,21 @@ export default function StudentDashboard({ user, onLogout }) {
           </div>
         )}
 
-        {tab === 'drives' && <AppliedDrives userId={user.userId} userEmail={user.email} reloadTick={reloadTick} />}
-        {tab === 'available' && <AvailableDrives userId={user.userId} userName={user.name} userEmail={user.email} onApplicationSuccess={() => setReloadTick(p => p + 1)} />}
+        {tab === 'drives'    && <AppliedDrives userId={user.userId} userEmail={user.email} reloadTick={reloadTick} />}
+
+        {/* ── AVAILABLE DRIVES — passes profile data for completeness check ── */}
+        {tab === 'available' && (
+          <AvailableDrives
+            userId={user.userId}
+            userName={user.name}
+            userEmail={user.email}
+            profile={profile}
+            softSkills={softSkills}
+            techSkills={techSkills}
+            onApplicationSuccess={() => setReloadTick(t => t + 1)}
+            onGoToProfile={() => setTab('profile')}
+          />
+        )}
       </div>
     </div>
   );

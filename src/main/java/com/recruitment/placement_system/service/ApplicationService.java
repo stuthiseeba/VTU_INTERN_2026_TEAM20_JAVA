@@ -8,9 +8,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.recruitment.placement_system.entity.Application;
 import com.recruitment.placement_system.entity.DriveStudent;
+import com.recruitment.placement_system.entity.StudentProfile;
 import com.recruitment.placement_system.entity.User;
 import com.recruitment.placement_system.repository.ApplicationRepository;
 import com.recruitment.placement_system.repository.DriveStudentRepository;
+import com.recruitment.placement_system.repository.StudentProfileRepository;
 import com.recruitment.placement_system.repository.UserRepository;
 
 @Service
@@ -25,17 +27,36 @@ public class ApplicationService {
     @Autowired
     private DriveStudentRepository driveStudentRepository;
 
-    // ✅ Apply for Drive — simplified, no eligibility check for now
+    // ✅ NEW: injected so we can check profile completeness before applying
+    @Autowired
+    private StudentProfileRepository studentProfileRepository;
+
+    // ── Apply for Drive ────────────────────────────────────────────────────
     @Transactional
     public Application apply(Application application) {
+
+        // ── 1. Duplicate-application guard ────────────────────────────────
         if (repository.findByStudentIdAndDriveId(application.getStudentId(), application.getDriveId()).isPresent()) {
             throw new RuntimeException("You have already applied for this drive");
         }
 
+        // ── 2. Profile completeness check ─────────────────────────────────
+        StudentProfile profile = studentProfileRepository
+                .findByUserId((long) application.getStudentId())
+                .orElseThrow(() -> new RuntimeException(
+                        "Profile not found. Please complete your profile before applying."));
+
+        if (!isProfileComplete(profile)) {
+            throw new RuntimeException(
+                    "Your profile is not 100% complete. Please fill in all required fields " +
+                    "(personal info, academic records, Aadhaar number, and at least one soft and " +
+                    "technical skill) before applying for a drive.");
+        }
+
+        // ── 3. Default stage / status ──────────────────────────────────────
         if (application.getStage() == null || application.getStage().isBlank()) {
             application.setStage("Applied");
         }
-
         if (application.getStatus() == null || application.getStatus().isBlank()) {
             application.setStatus("Pending");
         }
@@ -58,12 +79,52 @@ public class ApplicationService {
         return saved;
     }
 
-    // ✅ Get all applications
-    public List<Application> getApplications() {
-        return repository.findAll();  // Assuming findAll(), adjust if custom method
+    // ── Profile completeness helper ────────────────────────────────────────
+    /**
+     * Returns true only when every required field is non-blank AND the student
+     * has entered at least one soft skill and one technical skill.
+     *
+     * Required fields (must all be non-empty):
+     *   Personal  : phone, address, gradYear
+     *   Academic  : cgpa, department, college
+     *   10th      : school10, score10, year10
+     *   12th      : school12, score12, year12
+     *   Degree    : degreeName, specialization, yearDegree
+     *   ID        : aadharNumber
+     *   Skills    : softSkills, techSkills  (comma-separated; at least one entry each)
+     */
+    private boolean isProfileComplete(StudentProfile p) {
+        return notEmpty(p.getPhone())
+            && notEmpty(p.getAddress())
+            && notEmpty(p.getGradYear())
+            && notEmpty(p.getCgpa())
+            && notEmpty(p.getDepartment())
+            && notEmpty(p.getCollege())
+            && notEmpty(p.getSchool10())
+            && notEmpty(p.getScore10())
+            && notEmpty(p.getYear10())
+            && notEmpty(p.getSchool12())
+            && notEmpty(p.getScore12())
+            && notEmpty(p.getYear12())
+            && notEmpty(p.getDegreeName())
+            && notEmpty(p.getSpecialization())
+            && notEmpty(p.getYearDegree())
+            && notEmpty(p.getAadharNumber())
+            && notEmpty(p.getSoftSkills())
+            && notEmpty(p.getTechSkills());
     }
 
-    // ✅ Get applications by drive
+    /** Helper: true when the string is non-null and not blank. */
+    private boolean notEmpty(String s) {
+        return s != null && !s.trim().isEmpty();
+    }
+
+    // ── Remaining existing methods (unchanged) ─────────────────────────────
+
+    public List<Application> getApplications() {
+        return repository.findAll();
+    }
+
     public List<Application> getApplicationsByDrive(Long driveId) {
         return repository.findByDriveId(driveId);
     }
@@ -72,9 +133,9 @@ public class ApplicationService {
         return repository.findByStudentId(studentId);
     }
 
-    // ✅ Update stage and status
     public Application updateStage(int id, String stage, String status) {
-        Application app = repository.findById(id).orElseThrow(() -> new RuntimeException("Application not found"));
+        Application app = repository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Application not found"));
         app.setStage(stage);
         app.setStatus(status);
         return repository.save(app);
@@ -132,15 +193,12 @@ public class ApplicationService {
         if (roundIndex <= 0) {
             return "Applied";
         }
-
         if ("Rejected".equalsIgnoreCase(status)) {
             return "Rejected in Round " + roundIndex;
         }
-
         if ("Selected".equalsIgnoreCase(status)) {
             return "Round " + roundIndex + " Cleared";
         }
-
         return "Round " + roundIndex;
     }
 
