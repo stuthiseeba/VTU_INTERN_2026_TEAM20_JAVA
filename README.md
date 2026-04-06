@@ -9,7 +9,6 @@ A complete backend REST API system for managing campus recruitment drives, stude
 
 - [Project Overview](#project-overview)
 - [Tech Stack](#tech-stack)
-- [Project Architecture](#project-architecture)
 - [Prerequisites](#prerequisites)
 - [Setup & Installation](#setup--installation)
 - [API Reference](#api-reference)
@@ -58,71 +57,6 @@ The Recruitment Drive Management System is a Spring Boot backend application int
 
 ---
 
-## Project Architecture
-
-```
-Browser (React - port 5173)
-        │
-        ▼ HTTP via Vite Proxy (/api → 8080)
-┌──────────────────────────────────────┐
-│         Controller Layer             │
-│  AuthController                      │
-│  UserController                      │
-│  ContentController                   │
-│  DriveController                     │
-│  TpoDriveController                  │ 
-│  ApplicationController               │
-│  StudentController                   │
-│  StudentProfileController            │
-└───────────────┬──────────────────────┘
-                │
-┌───────────────▼──────────────────────┐
-│            Service Layer             │
-│  AuthService                         │ ← OTP + Email Verification
-│  EmailService                        │ ← Gmail SMTP
-│  DriveService                        │
-│  ApplicationService                  │ ← Eligibility Engine + Metrics
-│  StudentService                      │
-└───────────────┬──────────────────────┘
-                │
-┌───────────────▼──────────────────────┐
-│          Repository Layer            │
-│  UserRepository                      │
-│  DriveRepository                     │
-│  StudentRepository                   │
-│  StudentProfileRepository            │
-│  ApplicationRepository               │
-│  ContentItemRepository               │
-│  DriveStudentRepository              │
-│  PatDriveRepository                  │
-└───────────────┬──────────────────────┘
-                │
-┌───────────────▼──────────────────────┐
-│             Database (MySQL)         │
-│  users                               │
-│  roles                               │
-│  drives                              │
-│  students                            │
-│  student_profiles                    │
-│  applications                        │ 
-│  content_items                       │
-│  drive_students                      │
-│  pat_drives                          │
-└──────────────────────────────────────┘
-```
-
-🔐 Security Layer (Cross-Cutting)
---------------------------------
-- JwtAuthenticationFilter
-- JwtUtil
-- SecurityConfig
-
-Public Endpoints:
-  /api/auth/**
-
-Protected Endpoints:
-  All other APIs → require Bearer JWT token
----
 
 ## Prerequisites
 
