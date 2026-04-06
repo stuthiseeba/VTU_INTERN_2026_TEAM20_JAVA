@@ -1,7 +1,7 @@
 # Recruitment Drive Management System
 ### VTU Internship 2026 — Team 20 | Java Full Stack
 
-A complete backend REST API system for managing campus recruitment drives, student applications, eligibility filtering, and conversion analytics — integrated across Team 1 (Auth), Team 2 (Recruitment), and Team 3 (Frontend/Analytics).
+A complete backend REST API system for managing campus recruitment drives, student applications, eligibility filtering, and conversion analytics.
 
 ---
 
@@ -271,7 +271,7 @@ Theme preference is saved to `localStorage` and persists across sessions.
 
 ## API Reference
 
-### Team 1 — Authentication APIs
+### Authentication APIs
 > Public — no token required.
 
 | Method | Endpoint | Description |
@@ -312,7 +312,7 @@ Returns: `{ token, id, email, fullName, role, isVerified }`
 
 ---
 
-### Team 1 — User APIs
+### User APIs
 > Requires JWT Bearer token.
 
 | Method | Endpoint | Description |
@@ -322,7 +322,7 @@ Returns: `{ token, id, email, fullName, role, isVerified }`
 
 ---
 
-### Team 2 — Drive APIs
+### Drive APIs
 > Requires JWT Bearer token.
 
 | Method | Endpoint | Description |
@@ -349,7 +349,7 @@ Returns: `{ token, id, email, fullName, role, isVerified }`
 
 ---
 
-### Team 2 — Application APIs
+### Application APIs
 > Requires JWT Bearer token.
 
 | Method | Endpoint | Description |
@@ -374,7 +374,7 @@ Returns: `{ token, id, email, fullName, role, isVerified }`
 
 ---
 
-### Team 2 — Student APIs
+### Student APIs
 > Requires JWT Bearer token.
 
 | Method | Endpoint | Description |
