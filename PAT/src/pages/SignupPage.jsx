@@ -16,7 +16,7 @@ export default function SignupPage({ onGoHome, onGoLogin }) {
   // Step 2 state
   const [otp,       setOtp]       = useState("");
   const [resendMsg, setResendMsg] = useState("");
-
+  const [showPassword, setShowPassword] = useState(false);
   // ── Step 1: Signup → sends OTP ────────────────────────────────────────────
   async function handleSignup() {
     setError("");
@@ -180,7 +180,29 @@ export default function SignupPage({ onGoHome, onGoLogin }) {
         </div>
         <div className="field">
           <label>Password</label>
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Create a password" autoComplete="new-password" />
+          <div style={{ position: "relative" }}>
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Create a password"
+              autoComplete="new-password"
+              style={{ width: "100%", paddingRight: "40px" }}
+            />
+
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                cursor: "pointer"
+              }}
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </span>
+          </div>
         </div>
         <div className="field">
           <label>Role</label>

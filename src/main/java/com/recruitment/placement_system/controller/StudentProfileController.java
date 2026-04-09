@@ -29,7 +29,7 @@ public class StudentProfileController {
         profile.setPhone(body.get("phone"));
         profile.setLinkedin(body.get("linkedin"));
         profile.setAddress(body.get("address"));
-        profile.setGradYear(body.get("gradYear"));
+        profile.setResumeLink(body.get("resumeLink"));
         profile.setCgpa(body.get("cgpa"));
         profile.setDepartment(body.get("department"));
         profile.setCollege(body.get("college"));

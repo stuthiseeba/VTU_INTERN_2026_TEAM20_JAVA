@@ -1,10 +1,20 @@
-export default function HomePage({ onGoToInfo, onGoToLogin }) {
+export default function HomePage({ onGoToInfo, onGoToLogin, onGoToSignup }) {
   return (
     <div>
       <div className="navbar">
         <div className="logo">Placement<span>Portal</span></div>
         <nav>
           <a onClick={() => onGoToInfo('contact')}>Contact</a>
+
+          {/* ✅ NEW SIGNUP BUTTON */}
+          <button 
+            className="nav-btn signup-btn"
+            onClick={() => onGoToSignup()}
+          >
+            Sign Up
+          </button>
+
+          {/* EXISTING LOGIN DROPDOWN */}
           <div className="nav-login-wrap">
             <button className="nav-btn">Login ▾</button>
             <div className="login-dropdown">
@@ -41,26 +51,13 @@ export default function HomePage({ onGoToInfo, onGoToLogin }) {
             <h3>Announcements</h3>
             <p>Stay updated with latest placement news and alerts</p>
           </div>
-          <div className="role-card" onClick={() => onGoToInfo('companies')}>
-            <div className="rc-icon">🏢</div>
-            <h3>About Companies</h3>
-            <p>Explore profiles of recruiting companies</p>
-          </div>
-          <div className="role-card" onClick={() => onGoToInfo('drives')}>
-            <div className="rc-icon">📅</div>
-            <h3>Drive Schedules</h3>
-            <p>View upcoming placement drive dates</p>
-          </div>
+          
           <div className="role-card" onClick={() => onGoToInfo('partnerships')}>
             <div className="rc-icon">🤝</div>
             <h3>Our Partnerships</h3>
             <p>Companies we have partnered with</p>
           </div>
-          <div className="role-card" onClick={() => onGoToInfo('global')}>
-            <div className="rc-icon">🌍</div>
-            <h3>Global Footprints</h3>
-            <p>Our reach across industries and locations</p>
-          </div>
+
         </div>
       </div>
     </div>

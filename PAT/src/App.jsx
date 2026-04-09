@@ -46,6 +46,7 @@ function HomePageWrapper({ onGoToInfo }) {
     <HomePage
       onGoToInfo={(key) => { onGoToInfo(key); navigate(`/info/${key}`); }}
       onGoToLogin={(role) => navigate(`/login?role=${role}`)}
+      onGoToSignup={() => navigate("/signup")}
     />
   );
 }

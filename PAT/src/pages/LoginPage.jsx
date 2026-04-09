@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+
 export default function LoginPage({ role, onGoHome, onGoSignup, onLoginSuccess }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -15,6 +16,7 @@ export default function LoginPage({ role, onGoHome, onGoSignup, onLoginSuccess }
 
   const [forgotError, setForgotError] = useState("");
   const [forgotSuccess, setForgotSuccess] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // ── Login ────────────────────────────────────────────────────────────────
   async function handleLogin() {
@@ -159,12 +161,34 @@ export default function LoginPage({ role, onGoHome, onGoSignup, onLoginSuccess }
 
               <div className="field">
                 <label>New Password</label>
-                <input
+                {/* <input
                   type="password"
                   value={forgotPassword}
                   onChange={e => setForgotPassword(e.target.value)}
                   placeholder="Enter new password"
-                />
+                /> */}
+                <div style={{ position: "relative" }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={forgotPassword}
+                    onChange={e => setForgotPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    style={{ width: "100%", paddingRight: "40px" }}
+                  />
+
+                  <span
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: "absolute",
+                      right: "10px",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      cursor: "pointer"
+                    }}
+                  >
+                    {showPassword ? "🙈" : "👁️"}
+                  </span>
+                </div>
               </div>
 
               <button className="submit-btn" onClick={handleResetPassword}>
@@ -230,12 +254,35 @@ export default function LoginPage({ role, onGoHome, onGoSignup, onLoginSuccess }
             </a>
           </div>
 
-          <input
+          {/* <input
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             placeholder="Enter your password"
-          />
+          /> */}
+          <div style={{ position: "relative" }}>
+            <input
+              type={showPassword ? "text" : "password"}
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="Enter your password"
+              style={{ width: "100%", paddingRight: "40px" }}
+            />
+
+            <span
+              onClick={() => setShowPassword(!showPassword)}
+              style={{
+                position: "absolute",
+                right: "10px",
+                top: "50%",
+                transform: "translateY(-50%)",
+                cursor: "pointer"
+              }}
+            >
+              {showPassword ? "🙈" : "👁️"}
+            </span>
+          </div>
+          
         </div>
 
         {error && (

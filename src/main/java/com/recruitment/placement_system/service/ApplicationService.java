@@ -80,23 +80,11 @@ public class ApplicationService {
     }
 
     // ── Profile completeness helper ────────────────────────────────────────
-    /**
-     * Returns true only when every required field is non-blank AND the student
-     * has entered at least one soft skill and one technical skill.
-     *
-     * Required fields (must all be non-empty):
-     *   Personal  : phone, address, gradYear
-     *   Academic  : cgpa, department, college
-     *   10th      : school10, score10, year10
-     *   12th      : school12, score12, year12
-     *   Degree    : degreeName, specialization, yearDegree
-     *   ID        : aadharNumber
-     *   Skills    : softSkills, techSkills  (comma-separated; at least one entry each)
-     */
+
     private boolean isProfileComplete(StudentProfile p) {
         return notEmpty(p.getPhone())
             && notEmpty(p.getAddress())
-            && notEmpty(p.getGradYear())
+            && notEmpty(p.getResumeLink())
             && notEmpty(p.getCgpa())
             && notEmpty(p.getDepartment())
             && notEmpty(p.getCollege())

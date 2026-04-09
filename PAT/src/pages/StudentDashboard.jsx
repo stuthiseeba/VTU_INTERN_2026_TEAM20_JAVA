@@ -4,7 +4,7 @@ const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AIML", "DS"];
 
 function calculateProfileCompletion(profile, softSkills, techSkills) {
   const requiredFields = [
-    'phone', 'address', 'gradYear',           // Personal
+    'phone', 'address', 'resumeLink',           // Personal
     'cgpa', 'department', 'college',           // Academic
     'school10', 'score10', 'year10',           // 10th
     'school12', 'score12', 'year12',           // 12th
@@ -116,7 +116,7 @@ function AvailableDrives({ userId, userName, userEmail, profile, softSkills, tec
       .then(d => {
         setAppData({
           name: d.name || userName || '', email: d.email || userEmail || '', phone: d.phone || '',
-          linkedin: d.linkedin || '', address: d.address || '', gradYear: d.gradYear || '',
+          linkedin: d.linkedin || '', address: d.address || '', resumeLink: d.resumeLink || '',
           cgpa: d.cgpa || '', department: d.department || '', college: d.college || '',
           degreeName: d.degreeName || '', specialization: d.specialization || '', yearDegree: d.yearDegree || '',
           softSkills: d.softSkills || '', techSkills: d.techSkills || ''
@@ -184,7 +184,14 @@ function AvailableDrives({ userId, userName, userEmail, profile, softSkills, tec
             <div className="form-field"><label>Email</label><input type="text" {...f('email')} /></div>
             <div className="form-field"><label>Phone</label><input type="text" {...f('phone')} placeholder="+91 XXXXX XXXXX" /></div>
             <div className="form-field"><label>LinkedIn</label><input type="text" {...f('linkedin')} placeholder="linkedin.com/in/yourname" /></div>
-            <div className="form-field"><label>Year of Graduation</label><input type="text" {...f('gradYear')} placeholder="e.g. 2025" /></div>
+            <div className="form-field">
+              <label>Resume Link (Google Drive)</label>
+              <input
+                type="text"
+                {...f('resumeLink')}
+                placeholder="https://drive.google.com/your-resume-folder"
+              />
+            </div>
             <div className="form-field full"><label>Address</label><textarea {...f('address')} placeholder="Your address" /></div>
           </div>
         </div>
@@ -347,7 +354,7 @@ function AvailableDrives({ userId, userName, userEmail, profile, softSkills, tec
 // ─────────────────────────────────────────────────────────────────────────────
 export default function StudentDashboard({ user, onLogout }) {
   const [tab, setTab] = useState("overview");
-  const [profile, setProfile] = useState({ phone:'', linkedin:'', address:'', gradYear:'', cgpa:'', department:'', college:'', school10:'', score10:'', year10:'', school12:'', score12:'', year12:'', degreeName:'', specialization:'', yearDegree:'', aadharNumber:'' });
+  const [profile, setProfile] = useState({ phone:'', linkedin:'', address:'', resumeLink:'', cgpa:'', department:'', college:'', school10:'', score10:'', year10:'', school12:'', score12:'', year12:'', degreeName:'', specialization:'', yearDegree:'', aadharNumber:'' });
   const [softSkills, setSoftSkills] = useState([]);
   const [techSkills, setTechSkills] = useState([]);
   const [softInput, setSoftInput] = useState("");
@@ -360,7 +367,7 @@ export default function StudentDashboard({ user, onLogout }) {
       .then(r => r.json())
       .then(d => {
         if (!d.userId) return;
-        setProfile({ phone:d.phone||'', linkedin:d.linkedin||'', address:d.address||'', gradYear:d.gradYear||'', cgpa:d.cgpa||'', department:d.department||'', college:d.college||'', school10:d.school10||'', score10:d.score10||'', year10:d.year10||'', school12:d.school12||'', score12:d.score12||'', year12:d.year12||'', degreeName:d.degreeName||'', specialization:d.specialization||'', yearDegree:d.yearDegree||'', aadharNumber:d.aadharNumber||'' });
+        setProfile({ phone:d.phone||'', linkedin:d.linkedin||'', address:d.address||'', resumeLink:d.resumeLink||'', cgpa:d.cgpa||'', department:d.department||'', college:d.college||'', school10:d.school10||'', score10:d.score10||'', year10:d.year10||'', school12:d.school12||'', score12:d.score12||'', year12:d.year12||'', degreeName:d.degreeName||'', specialization:d.specialization||'', yearDegree:d.yearDegree||'', aadharNumber:d.aadharNumber||'' });
         if (d.softSkills) setSoftSkills(d.softSkills.split(",").filter(Boolean));
         if (d.techSkills) setTechSkills(d.techSkills.split(",").filter(Boolean));
       }).catch(() => {});
@@ -471,11 +478,13 @@ export default function StudentDashboard({ user, onLogout }) {
                 <div className="form-field"><label>Email</label><input type="text" value={user.email} readOnly /></div>
                 <div className="form-field"><label>Phone Number</label><input type="text" {...p('phone')} placeholder="+91 XXXXX XXXXX" /></div>
                 <div className="form-field"><label>LinkedIn Profile</label><input type="text" {...p('linkedin')} placeholder="linkedin.com/in/yourname" /></div>
-                <div className="form-field"><label>Year of Graduation</label>
-                  <select {...p('gradYear')}>
-                    <option value="">Select year</option>
-                    {['2024','2025','2026','2027','2028'].map(y => <option key={y}>{y}</option>)}
-                  </select>
+                <div className="form-field">
+                  <label>Resume Link (Google Drive)</label>
+                  <input
+                    type="url"
+                    {...p('resumeLink')}
+                    placeholder="https://drive.google.com/your-resume-folder"
+                  />
                 </div>
                 <div className="form-field full"><label>Address</label><textarea {...p('address')} placeholder="Your full address"></textarea></div>
               </div>

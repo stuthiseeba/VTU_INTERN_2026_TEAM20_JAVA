@@ -17,7 +17,8 @@ public class StudentProfile {
     private String phone;
     private String linkedin;
     private String address;
-    private String gradYear;
+    @Column(name = "resume_link")
+    private String resumeLink;
 
     // Academic
     private String cgpa;
@@ -55,8 +56,8 @@ public class StudentProfile {
     public void setLinkedin(String linkedin) { this.linkedin = linkedin; }
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
-    public String getGradYear() { return gradYear; }
-    public void setGradYear(String gradYear) { this.gradYear = gradYear; }
+    public String getResumeLink() { return resumeLink; }
+    public void setResumeLink(String resumeLink) { this.resumeLink = resumeLink; }
     public String getCgpa() { return cgpa; }
     public void setCgpa(String cgpa) { this.cgpa = cgpa; }
     public String getDepartment() { return department; }
