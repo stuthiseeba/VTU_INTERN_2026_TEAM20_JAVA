@@ -354,8 +354,16 @@ body { background: #fff8f0; color: #2d1a0e; }
 }
 
 [data-theme="dark"] .add-content-form h5 {
-  color: #bbb;
+  color: #ff8b5a !important;
   border-bottom-color: #444 !important;
+}
+
+[data-theme="dark"] .dash-topbar h1 {
+  color: #ff8b5a;
+}
+
+[data-theme="dark"] .dash-topbar p {
+  color: #bbb;
 }
 
 [data-theme="dark"] .add-content-form label {
