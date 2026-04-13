@@ -8,7 +8,7 @@ function latestStudents(studentRows) {
 
   for (const student of studentRows) {
     const existing = latestByEmail.get(student.email);
-    if (!existing || student.roundIdx > existing.roundIdx || (student.roundIdx === existing.roundIdx && student.id > existing.id)) {
+    if (!existing || student.roundIndex > existing.roundIndex || (student.roundIndex === existing.roundIndex && student.id > existing.id)) {
       latestByEmail.set(student.email, student);
     }
   }
@@ -21,14 +21,14 @@ export default function TpoDashboard({ user, onLogout }) {
   const [drives, setDrives] = useState([]);
   const [funnelDriveId, setFunnelDriveId] = useState(null);
   const [applications, setApplications] = useState([]);
-  
+
   // Initialized with all the new structured fields
-  const [form, setForm] = useState({ 
+  const [form, setForm] = useState({
     company: '', role: '', jobType: 'Full-time', ctc: '', stipend: '', location: '', companyType: 'Product-based',
     driveDate: '', driveTime: '', venue: '', driveMode: 'Offline',
-    minCgpa: '', maxBacklogs: '0', tenthPercent: '', twelfthPercent: '', gapYears: '0', 
+    minCgpa: '', maxBacklogs: '0', tenthPercent: '', twelfthPercent: '', gapYears: '0',
     eligibleBranches: [], graduationYear: new Date().getFullYear(), yearAllowed: '4th year',
-    rounds: [], registrationDeadline: '', resultDate: '', jdLink: '', applyLink: '', companyWebsite: '', bondDetails: '', 
+    rounds: [], registrationDeadline: '', resultDate: '', jdLink: '', applyLink: '', companyWebsite: '', bondDetails: '',
     status: 'Open', numberOfPositions: '', autoShortlist: false, sendEmailAlert: false
   });
 
@@ -39,15 +39,19 @@ export default function TpoDashboard({ user, onLogout }) {
     try {
       const res = await fetch(`http://localhost:8080/api/tpo/drives/${user.userId}`);
       const data = await res.json();
+
       if (!Array.isArray(data)) {
         setDrives([]);
         return;
       }
       const loaded = [];
       for (const d of data) {
+        console.log("API DRIVE DATA:", d);
+
         const sr = await fetch(`http://localhost:8080/api/tpo/drive/${d.id}/students`);
         const students = await sr.json();
         const studentList = Array.isArray(students) ? students : [];
+
         loaded.push({
           id: d.id,
           company: d.company,
@@ -56,17 +60,18 @@ export default function TpoDashboard({ user, onLogout }) {
           time: d.driveTime,
           venue: d.venue,
           status: d.status || 'Open',
+          rounds: "Aptitude Test," + d.rounds,
           students: latestStudents(studentList.map(s => ({
             id: s.id,
             name: s.studentName,
             email: s.studentEmail,
-            roundIdx: s.roundIndex,
+            roundIndex: s.roundIndex,
             status: s.status
           })))
         });
       }
       setDrives(loaded);
-    } catch {}
+    } catch { }
   }
 
   async function loadApplications(driveId) {
@@ -74,7 +79,7 @@ export default function TpoDashboard({ user, onLogout }) {
       const res = await fetch(`http://localhost:8080/applications/drive/${driveId}`);
       const data = await res.json();
       setApplications(Array.isArray(data) ? data : []);
-    } catch {}
+    } catch { }
   }
 
   async function refreshDriveViews() {
@@ -88,23 +93,23 @@ export default function TpoDashboard({ user, onLogout }) {
     if (!form.company || !form.driveDate) { alert("Company name and date are required."); return; }
     try {
       const res = await fetch("http://localhost:8080/api/tpo/drive", {
-        method:"POST", headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ 
-            tpoUserId: user.userId, 
-            ...form,
-            eligibleBranches: (form.eligibleBranches || []).join(','),
-            rounds: (form.rounds || []).join(',')
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tpoUserId: user.userId,
+          ...form,
+          eligibleBranches: (form.eligibleBranches || []).join(','),
+          rounds: (form.rounds || []).join(',')
         })
       });
       if (!res.ok) throw new Error();
-      
+
       // Reset form on success
-      setForm({ 
+      setForm({
         company: '', role: '', jobType: 'Full-time', ctc: '', stipend: '', location: '', companyType: 'Product-based',
         driveDate: '', driveTime: '', venue: '', driveMode: 'Offline',
-        minCgpa: '', maxBacklogs: '0', tenthPercent: '', twelfthPercent: '', gapYears: '0', 
+        minCgpa: '', maxBacklogs: '0', tenthPercent: '', twelfthPercent: '', gapYears: '0',
         eligibleBranches: [], graduationYear: new Date().getFullYear(), yearAllowed: '4th year',
-        rounds: [], registrationDeadline: '', resultDate: '', jdLink: '', applyLink: '', companyWebsite: '', bondDetails: '', 
+        rounds: [], registrationDeadline: '', resultDate: '', jdLink: '', applyLink: '', companyWebsite: '', bondDetails: '',
         status: 'Open', numberOfPositions: '', autoShortlist: false, sendEmailAlert: false
       });
       await loadDrives();
@@ -116,7 +121,7 @@ export default function TpoDashboard({ user, onLogout }) {
     const d = drives[idx];
     try {
       if (d.id) {
-        const res = await fetch(`http://localhost:8080/api/tpo/drive/${d.id}`, { method:"DELETE" });
+        const res = await fetch(`http://localhost:8080/api/tpo/drive/${d.id}`, { method: "DELETE" });
         if (!res.ok) throw new Error();
       }
       if (funnelDriveId === d.id) {
@@ -160,22 +165,30 @@ export default function TpoDashboard({ user, onLogout }) {
 
   function openFunnel(driveId) { setFunnelDriveId(driveId); setTab("tpo-funnel"); }
 
-  const selectedDrive = drives.find(d => d.id === funnelDriveId) || null;
+  const selectedDrive = drives.find(d => d.id === funnelDriveId);
+  const driveRounds =
+    typeof selectedDrive?.rounds === "string"
+      ? selectedDrive.rounds.split(",").map(r => r.trim())
+      : Array.isArray(selectedDrive?.rounds)
+        ? selectedDrive.rounds
+        : [];
+
   const allStudents = drives.flatMap(d => d.students.map(s => ({ ...s, driveCompany: d.company })));
   const totalApplications = allStudents.length;
+
 
   return (
     <div className="dash-layout">
       <div className="dash-sidebar">
         <div className="s-logo">Placement<span>Portal</span></div>
         <div className="s-user">
-          <div className="s-avatar">{(user.name||'T').toUpperCase()}</div>
+          <div className="s-avatar">{(user.name || 'T').toUpperCase()}</div>
           <div className="s-name">{user.name}</div>
           <div className="s-role">TPO</div>
         </div>
         <div className="dash-nav">
-          {[['tpo-overview','📊','Overview'],['tpo-drives','🏢','Manage Drives'],['tpo-students','👥','All Students'],['tpo-funnel','🔄','Recruitment Funnel'],['tpo-applications','📄','Applications']].map(([id,icon,label]) => (
-            <a key={id} className={tab===id?'active':''} onClick={() => setTab(id)}><span className="nav-icon">{icon}</span> {label}</a>
+          {[['tpo-overview', '📊', 'Overview'], ['tpo-drives', '🏢', 'Manage Drives'], ['tpo-students', '👥', 'All Students'], ['tpo-funnel', '🔄', 'Recruitment Funnel'], ['tpo-applications', '📄', 'Applications']].map(([id, icon, label]) => (
+            <a key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}><span className="nav-icon">{icon}</span> {label}</a>
           ))}
         </div>
         <div className="dash-logout"><button onClick={onLogout}>← Logout</button></div>
@@ -193,7 +206,7 @@ export default function TpoDashboard({ user, onLogout }) {
             </div>
             <div className="profile-card">
               <h3>Recent Drives</h3>
-              {drives.slice(0,3).map((d,i) => (
+              {drives.reverse().slice(0, 5).map((d, i) => (
                 <div className="content-item" key={i}>
                   <div className="ci-text">
                     <h4>{d.company} — {d.role}</h4>
@@ -211,26 +224,26 @@ export default function TpoDashboard({ user, onLogout }) {
         {tab === 'tpo-drives' && (
           <div>
             <div className="dash-topbar"><div><h1>Manage Drives</h1><p>Create and manage placement drives</p></div></div>
-            
+
             <div className="add-content-form" style={{ padding: '20px', borderRadius: '10px', marginBottom: '30px' }}>
               <h3 style={{ marginBottom: '20px', color: '#e8651a' }}> Create New Placement Drive</h3>
-              
+
               {/* SECTION 1: Basic Info */}
               <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: '#e8651a' }}>Basic Information</h5>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
                 <input type="text" placeholder="Company Name" value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
-                                <input type="text" placeholder="Role (e.g. SDE)" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} style={{ padding: '10px',borderRadius: '5px' }} />
+                <input type="text" placeholder="Role (e.g. SDE)" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
                 <div>
-                   <select value={form.jobType} onChange={e => setForm(p => ({ ...p, jobType: e.target.value }))} style={{ padding: '10px', borderRadius: '5px',width: '100%', boxSizing: 'border-box'}}>
-                  <option value="Full-time">Full-time</option>
-                  <option value="Internship">Internship</option>
-                  <option value="Internship + PPO">Internship + PPO</option>
-                </select>
+                  <select value={form.jobType} onChange={e => setForm(p => ({ ...p, jobType: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%', boxSizing: 'border-box' }}>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Internship + PPO">Internship + PPO</option>
+                  </select>
                 </div>
-                 
-              
-                
-                <div><select value={form.companyType} onChange={e => setForm(p => ({ ...p, companyType: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%', boxSizing: 'border-box'}}>
+
+
+
+                <div><select value={form.companyType} onChange={e => setForm(p => ({ ...p, companyType: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%', boxSizing: 'border-box' }}>
                   <option value="Product-based">Product-based</option>
                   <option value="Service-based">Service-based</option>
                   <option value="Startup">Startup</option>
@@ -239,31 +252,31 @@ export default function TpoDashboard({ user, onLogout }) {
 
                 <input type="number" placeholder="CTC (LPA)" step="0.1" value={form.ctc} onChange={e => setForm(p => ({ ...p, ctc: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
                 <input type="number" placeholder="Stipend (per month)" value={form.stipend} onChange={e => setForm(p => ({ ...p, stipend: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
-                <input type="text" placeholder="Location (City)" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} style={{ padding: '10px',borderRadius: '5px' }} />
+                <input type="text" placeholder="Location (City)" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
               </div>
 
               {/* SECTION 2: Drive Details */}
               <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: '#e8651a' }}>Drive Details</h5>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
                 <div>
-                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Drive Date</label>
-                   <input type="date" value={form.driveDate} onChange={e => setForm(p => ({ ...p, driveDate: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
+                  <label style={{ fontSize: '12px', color: 'inherit', opacity: '0.7', display: 'block', marginBottom: '5px' }}>Drive Date</label>
+                  <input type="date" value={form.driveDate} onChange={e => setForm(p => ({ ...p, driveDate: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Time</label>
-                   <input type="time" value={form.driveTime} onChange={e => setForm(p => ({ ...p, driveTime: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
+                  <label style={{ fontSize: '12px', color: 'inherit', opacity: '0.7', display: 'block', marginBottom: '5px' }}>Time</label>
+                  <input type="time" value={form.driveTime} onChange={e => setForm(p => ({ ...p, driveTime: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Mode of Drive</label>
-                   <select value={form.driveMode} onChange={e => setForm(p => ({ ...p, driveMode: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }}>
-                     <option value="Online">Online</option>
-                     <option value="Offline">Offline</option>
-                     <option value="Hybrid">Hybrid</option>
-                   </select>
+                  <label style={{ fontSize: '12px', color: 'inherit', opacity: '0.7', display: 'block', marginBottom: '5px' }}>Mode of Drive</label>
+                  <select value={form.driveMode} onChange={e => setForm(p => ({ ...p, driveMode: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }}>
+                    <option value="Online">Online</option>
+                    <option value="Offline">Offline</option>
+                    <option value="Hybrid">Hybrid</option>
+                  </select>
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Venue / Link</label>
-                   <input type="text" placeholder="Venue or Meet Link" value={form.venue} onChange={e => setForm(p => ({ ...p, venue: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
+                  <label style={{ fontSize: '12px', color: 'inherit', opacity: '0.7', display: 'block', marginBottom: '5px' }}>Venue / Link</label>
+                  <input type="text" placeholder="Venue or Meet Link" value={form.venue} onChange={e => setForm(p => ({ ...p, venue: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
               </div>
 
@@ -295,17 +308,17 @@ export default function TpoDashboard({ user, onLogout }) {
               </div>
 
               <div style={{ marginBottom: '25px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold',color: '#e8651a' }}>Branches Allowed:</label>
+                <label style={{ display: 'block', marginBottom: '8px', fontSize: '14px', fontWeight: 'bold', color: '#e8651a' }}>Branches Allowed:</label>
                 <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                   {DEPARTMENTS.map(dept => (
                     <label key={dept} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer' }}>
-                      <input 
-                        type="checkbox" 
-                        checked={form.eligibleBranches?.includes(dept)} 
+                      <input
+                        type="checkbox"
+                        checked={form.eligibleBranches?.includes(dept)}
                         onChange={(e) => {
-                          if(e.target.checked) setForm(p => ({ ...p, eligibleBranches: [...(p.eligibleBranches || []), dept] }));
+                          if (e.target.checked) setForm(p => ({ ...p, eligibleBranches: [...(p.eligibleBranches || []), dept] }));
                           else setForm(p => ({ ...p, eligibleBranches: (p.eligibleBranches || []).filter(d => d !== dept) }));
-                        }} 
+                        }}
                       />
                       {dept}
                     </label>
@@ -318,13 +331,13 @@ export default function TpoDashboard({ user, onLogout }) {
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '25px' }}>
                 {PROCESS_ROUNDS.map(round => (
                   <label key={round} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer', background: 'var(--pill-bg, #f5f7fb)', padding: '8px 12px', borderRadius: '20px' }}>
-                    <input 
-                      type="checkbox" 
-                      checked={form.rounds?.includes(round)} 
+                    <input
+                      type="checkbox"
+                      checked={form.rounds?.includes(round)}
                       onChange={(e) => {
-                        if(e.target.checked) setForm(p => ({ ...p, rounds: [...(p.rounds || []), round] }));
+                        if (e.target.checked) setForm(p => ({ ...p, rounds: [...(p.rounds || []), round] }));
                         else setForm(p => ({ ...p, rounds: (p.rounds || []).filter(r => r !== round) }));
-                      }} 
+                      }}
                     />
                     {round}
                   </label>
@@ -335,20 +348,20 @@ export default function TpoDashboard({ user, onLogout }) {
               <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: '#e8651a' }}>5. Deadlines & Links</h5>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
                 <div>
-                  <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Registration Deadline</label>
-                   <input type="date" value={form.registrationDeadline} onChange={e => setForm(p => ({ ...p, registrationDeadline: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
+                  <label style={{ fontSize: '12px', color: 'inherit', opacity: '0.7', display: 'block', marginBottom: '5px' }}>Registration Deadline</label>
+                  <input type="date" value={form.registrationDeadline} onChange={e => setForm(p => ({ ...p, registrationDeadline: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Result Date (Expected)</label>
-                   <input type="date" value={form.resultDate} onChange={e => setForm(p => ({ ...p, resultDate: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
+                  <label style={{ fontSize: '12px', color: 'inherit', opacity: '0.7', display: 'block', marginBottom: '5px' }}>Result Date (Expected)</label>
+                  <input type="date" value={form.resultDate} onChange={e => setForm(p => ({ ...p, resultDate: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>Bond Details</label>
-                   <input type="text" placeholder="e.g. Yes - 2 Years" value={form.bondDetails} onChange={e => setForm(p => ({ ...p, bondDetails: e.target.value }))} style={{ padding: '10px',  borderRadius: '5px', width: '100%' }} />
+                  <label style={{ fontSize: '12px', color: 'inherit', opacity: '0.7', display: 'block', marginBottom: '5px' }}>Bond Details</label>
+                  <input type="text" placeholder="e.g. Yes - 2 Years" value={form.bondDetails} onChange={e => setForm(p => ({ ...p, bondDetails: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
                 <div>
-                   <label style={{fontSize: '12px', color: 'inherit', opacity: '0.7', display:'block', marginBottom:'5px'}}>JD / Apply Link</label>
-                   <input type="url" placeholder="https://..." value={form.jdLink} onChange={e => setForm(p => ({ ...p, jdLink: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
+                  <label style={{ fontSize: '12px', color: 'inherit', opacity: '0.7', display: 'block', marginBottom: '5px' }}>JD / Apply Link</label>
+                  <input type="url" placeholder="https://..." value={form.jdLink} onChange={e => setForm(p => ({ ...p, jdLink: e.target.value }))} style={{ padding: '10px', borderRadius: '5px', width: '100%' }} />
                 </div>
               </div>
 
@@ -372,11 +385,11 @@ export default function TpoDashboard({ user, onLogout }) {
 
             <div className="profile-card">
               <h3>Existing Drives</h3>
-              {drives.map((d,i) => (
+              {drives.map((d, i) => (
                 <div className="content-item" key={i}>
                   <div className="ci-text">
                     <h4>{d.company} — {d.role}</h4>
-                    <p>📅 {d.date} • {d.students.length} applicants • Status: <span style={{fontWeight:'bold', color: d.status==='Closed'?'red':'green'}}>{d.status}</span></p>
+                    <p>📅 {d.date} • {d.students.length} applicants • Status: <span style={{ fontWeight: 'bold', color: d.status === 'Closed' ? 'red' : 'green' }}>{d.status}</span></p>
                   </div>
                   <div className="ci-actions">
                     <button className="action-btn btn-view" onClick={() => openFunnel(d.id)}>View Funnel</button>
@@ -405,12 +418,18 @@ export default function TpoDashboard({ user, onLogout }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {allStudents.map((s,i) => (
+                    {allStudents.map((s, i) => (
                       <tr key={i}>
                         <td>{s.name}</td>
                         <td>{s.email}</td>
                         <td>{s.driveCompany}</td>
-                        <td>{s.roundIdx}</td>
+
+
+                        <td>
+                          {drives.find(d => d.company === s.driveCompany)?.rounds
+                            ?.split(',')
+                            ?.[s.roundIndex] || "Completed"}
+                        </td>
                         <td><span className={`badge badge-${s.status.toLowerCase()}`}>{s.status}</span></td>
                       </tr>
                     ))}
@@ -421,14 +440,27 @@ export default function TpoDashboard({ user, onLogout }) {
           </div>
         )}
 
-        {tab === 'tpo-funnel' && selectedDrive && (
+        {tab === 'tpo-funnel' && selectedDrive?.students && (
           <div>
             <div className="dash-topbar">
-              <div><h1>Recruitment Funnel — {selectedDrive.company}</h1><p>Track student progress through rounds</p></div>
-              <button className="action-btn btn-view" onClick={() => { setFunnelDriveId(null); setTab("tpo-drives"); }}>← Back</button>
+              <div>
+                <h1>Recruitment Funnel — {selectedDrive.company}</h1>
+                <p>Track student progress through rounds</p>
+              </div>
+              <button
+                className="action-btn btn-view"
+                onClick={() => {
+                  setFunnelDriveId(null);
+                  setTab("tpo-drives");
+                }}
+              >
+                ← Back
+              </button>
             </div>
+
             <div className="profile-card">
               <h3>Student Progress</h3>
+
               <div className="coord-table">
                 <table>
                   <thead>
@@ -440,20 +472,51 @@ export default function TpoDashboard({ user, onLogout }) {
                       <th>Actions</th>
                     </tr>
                   </thead>
+
                   <tbody>
-                    {selectedDrive.students.map((s,i) => (
-                      <tr key={i}>
-                        <td>{s.name}</td>
-                        <td>{s.email}</td>
-                        <td>{s.roundIdx}</td>
-                        <td><span className={`badge badge-${s.status.toLowerCase()}`}>{s.status}</span></td>
-                        <td>
-                          <button className="action-btn btn-verify" onClick={() => advanceStudent(s.id)}>Advance</button>
-                          <button className="action-btn btn-delete" onClick={() => rejectStudent(s.id)}>Reject</button>
-                        </td>
-                      </tr>
-                    ))}
+                    {(selectedDrive?.students || []).map((s, i) => {
+                      console.log("ROUND INDEX RAW:", s.roundIndex);
+
+                      // ✅ FIXED INDEX (handles 1-based backend)
+                      const index = Number(s.roundIndex ?? 1) - 1;
+
+                      return (
+                        <tr key={i}>
+                          <td>{s.name}</td>
+                          <td>{s.email}</td>
+
+                          <td>
+                            {driveRounds.includes(s.currentRound)
+                              ? s.currentRound
+                              : driveRounds[s.roundIndex] || "Aptitude Test"}
+                          </td>
+
+                          <td>
+                            <span className={`badge badge-${s.status.toLowerCase()}`}>
+                              {s.status}
+                            </span>
+                          </td>
+
+                          <td>
+                            <button
+                              className="action-btn btn-verify"
+                              onClick={() => advanceStudent(s.id)}
+                            >
+                              Advance
+                            </button>
+
+                            <button
+                              className="action-btn btn-delete"
+                              onClick={() => rejectStudent(s.id)}
+                            >
+                              Reject
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
+
                 </table>
               </div>
             </div>

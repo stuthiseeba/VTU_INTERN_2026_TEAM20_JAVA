@@ -1,5 +1,21 @@
 package com.recruitment.placement_system.controller;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.recruitment.placement_system.entity.DriveStudent;
 import com.recruitment.placement_system.entity.PatDrive;
 import com.recruitment.placement_system.entity.StudentProfile;
@@ -11,13 +27,6 @@ import com.recruitment.placement_system.repository.StudentProfileRepository;
 import com.recruitment.placement_system.repository.UserRepository;
 import com.recruitment.placement_system.service.ApplicationService;
 import com.recruitment.placement_system.service.EmailService;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 // ✅ Team 3 - TPO drive management and student funnel tracking
 @RestController
@@ -129,12 +138,26 @@ public class TpoDriveController {
     @PostMapping("/drive/student")
     public ResponseEntity<?> addStudent(@RequestBody Map<String, String> body) {
         DriveStudent s = new DriveStudent();
-        s.setDriveId(Long.parseLong(body.get("driveId")));
-        s.setStudentName(body.get("studentName"));
-        s.setStudentEmail(body.get("studentEmail"));
-        s.setRoundIndex(Integer.parseInt(body.get("roundIndex")));
-        s.setStatus("Appeared");
-        DriveStudent saved = driveStudentRepository.save(s);
+
+s.setDriveId(Long.parseLong(body.get("driveId")));
+s.setStudentName(body.get("studentName"));
+s.setStudentEmail(body.get("studentEmail"));
+
+
+
+// ✅ Validate against max rounds
+PatDrive drive = driveRepository.findById(s.getDriveId()).orElse(null);
+
+int maxRounds = (drive != null && drive.getRounds() != null && !drive.getRounds().isEmpty())
+        ? drive.getRounds().split(",").length
+        : 0;
+
+
+
+s.setRoundIndex(0);
+s.setStatus("Appeared");
+
+DriveStudent saved = driveStudentRepository.save(s);
         return ResponseEntity.ok(Map.of(
             "message", "Student added",
             "studentId", saved.getId().toString()
@@ -160,33 +183,78 @@ public class TpoDriveController {
     }
 
     // ── Promote Student to Next Round ─────────────────────────────────────────
-    @PostMapping("/drive/student/promote")
-    public ResponseEntity<?> promoteStudent(@RequestBody Map<String, String> body) {
-        Long sourceId = Long.parseLong(body.get("studentId"));
-        return driveStudentRepository.findById(sourceId).map(s -> {
+  @PostMapping("/drive/student/promote")
+public ResponseEntity<?> promoteStudent(@RequestBody Map<String, String> body) {
+
+    Long sourceId = Long.parseLong(body.get("studentId"));
+
+    return driveStudentRepository.findById(sourceId).map(s -> {
+
+        int currentRound = s.getRoundIndex();
+
+        PatDrive drive = driveRepository.findById(s.getDriveId())
+                .orElse(null);
+
+        if (drive == null) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "Drive not found"));
+        }
+
+        int maxRounds = (drive.getRounds() != null && !drive.getRounds().isEmpty())
+                ? drive.getRounds().split(",").length
+                : 0;
+
+        if (maxRounds == 0) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("message", "No rounds selected"));
+        }
+
+        // FINAL ROUND
+        if (currentRound >= maxRounds - 1) {
+
             s.setStatus("Selected");
             driveStudentRepository.save(s);
 
-            DriveStudent next = new DriveStudent();
-            next.setDriveId(s.getDriveId());
-            next.setStudentName(s.getStudentName());
-            next.setStudentEmail(s.getStudentEmail());
-            next.setRoundIndex(s.getRoundIndex() + 1);
-            next.setStatus("Appeared");
-            DriveStudent saved = driveStudentRepository.save(next);
             applicationService.syncDriveStudentProgress(
+                    s.getDriveId(),
+                    s.getStudentEmail(),
+                    currentRound,
+                    "Selected"
+            );
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Final round completed",
+                    "status", "Selected"
+            ));
+        }
+
+        // MOVE TO NEXT ROUND
+        s.setStatus("Promoted");
+        driveStudentRepository.save(s);
+
+        DriveStudent next = new DriveStudent();
+        next.setDriveId(s.getDriveId());
+        next.setStudentName(s.getStudentName());
+        next.setStudentEmail(s.getStudentEmail());
+        next.setRoundIndex(s.getRoundIndex() + 1);
+        next.setStatus("Appeared");
+
+        DriveStudent saved = driveStudentRepository.save(next);
+
+        applicationService.syncDriveStudentProgress(
                 saved.getDriveId(),
                 saved.getStudentEmail(),
                 saved.getRoundIndex(),
                 saved.getStatus()
-            );
+        );
 
-            return ResponseEntity.ok(Map.of(
+        return ResponseEntity.ok(Map.of(
                 "message", "Promoted",
                 "newStudentId", saved.getId().toString()
-            ));
-        }).orElse(ResponseEntity.notFound().build());
-    }
+        ));
+
+    }).orElse(ResponseEntity.notFound().build());
+}
 
     // ── Get Students for a Drive ──────────────────────────────────────────────
     @GetMapping("/drive/{driveId}/students")
