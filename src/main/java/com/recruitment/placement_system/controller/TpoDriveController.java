@@ -183,12 +183,12 @@ DriveStudent saved = driveStudentRepository.save(s);
     }
 
     // ── Promote Student to Next Round ─────────────────────────────────────────
-  @PostMapping("/drive/student/promote")
+@PostMapping("/drive/student/promote")
 public ResponseEntity<?> promoteStudent(@RequestBody Map<String, String> body) {
 
-    Long sourceId = Long.parseLong(body.get("studentId"));
+    Long studentId = Long.parseLong(body.get("studentId"));
 
-    return driveStudentRepository.findById(sourceId).map(s -> {
+    return driveStudentRepository.findById(studentId).map(s -> {
 
         int currentRound = s.getRoundIndex();
 
@@ -200,17 +200,11 @@ public ResponseEntity<?> promoteStudent(@RequestBody Map<String, String> body) {
                     .body(Map.of("message", "Drive not found"));
         }
 
-        int maxRounds = (drive.getRounds() != null && !drive.getRounds().isEmpty())
-                ? drive.getRounds().split(",").length
-                : 0;
+        List<String> rounds = List.of(drive.getRounds().split(","));
+        int maxRounds = rounds.size();
 
-        if (maxRounds == 0) {
-            return ResponseEntity.badRequest()
-                    .body(Map.of("message", "No rounds selected"));
-        }
-
-        // FINAL ROUND
-        if (currentRound >= maxRounds - 1) {
+        // ✅ FINAL ROUND
+        if (currentRound == maxRounds - 1) {
 
             s.setStatus("Selected");
             driveStudentRepository.save(s);
@@ -228,29 +222,21 @@ public ResponseEntity<?> promoteStudent(@RequestBody Map<String, String> body) {
             ));
         }
 
-        // MOVE TO NEXT ROUND
-        s.setStatus("Promoted");
+        // ✅ MOVE TO NEXT ROUND (NO NEW ROW)
+        s.setRoundIndex(currentRound + 1);
+        s.setStatus("Appeared");
+
         driveStudentRepository.save(s);
 
-        DriveStudent next = new DriveStudent();
-        next.setDriveId(s.getDriveId());
-        next.setStudentName(s.getStudentName());
-        next.setStudentEmail(s.getStudentEmail());
-        next.setRoundIndex(s.getRoundIndex() + 1);
-        next.setStatus("Appeared");
-
-        DriveStudent saved = driveStudentRepository.save(next);
-
         applicationService.syncDriveStudentProgress(
-                saved.getDriveId(),
-                saved.getStudentEmail(),
-                saved.getRoundIndex(),
-                saved.getStatus()
+                s.getDriveId(),
+                s.getStudentEmail(),
+                s.getRoundIndex(),
+                "Advance"
         );
 
         return ResponseEntity.ok(Map.of(
-                "message", "Promoted",
-                "newStudentId", saved.getId().toString()
+                "message", "Promoted"
         ));
 
     }).orElse(ResponseEntity.notFound().build());

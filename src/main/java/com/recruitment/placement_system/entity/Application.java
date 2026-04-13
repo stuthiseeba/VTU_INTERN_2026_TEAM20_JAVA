@@ -10,9 +10,13 @@ public class Application {
     private int applicationId;
 
     private int studentId;
-    private Long driveId;  // Changed to Long to match PatDrive.id
+    private Long driveId;
+
     private String stage;
     private String status;
+
+    // ✅ NEW FIELD (IMPORTANT)
+    private int roundIndex;
 
     public Application() {}
 
@@ -30,4 +34,8 @@ public class Application {
 
     public String getStatus() { return status; }
     public void setStatus(String status) { this.status = status; }
+
+    // ✅ NEW GETTERS/SETTERS
+    public int getRoundIndex() { return roundIndex; }
+    public void setRoundIndex(int roundIndex) { this.roundIndex = roundIndex; }
 }

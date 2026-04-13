@@ -60,7 +60,8 @@ export default function TpoDashboard({ user, onLogout }) {
           time: d.driveTime,
           venue: d.venue,
           status: d.status || 'Open',
-          rounds: "Aptitude Test," + d.rounds,
+          // rounds: "Aptitude Test," + d.rounds,
+          rounds: d.rounds,
           students: latestStudents(studentList.map(s => ({
             id: s.id,
             name: s.studentName,
@@ -229,7 +230,7 @@ export default function TpoDashboard({ user, onLogout }) {
               <h3 style={{ marginBottom: '20px', color: '#e8651a' }}> Create New Placement Drive</h3>
 
               {/* SECTION 1: Basic Info */}
-              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: '#e8651a' }}>Basic Information</h5>
+              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: '#e8651a' }}>1. Basic Information</h5>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
                 <input type="text" placeholder="Company Name" value={form.company} onChange={e => setForm(p => ({ ...p, company: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
                 <input type="text" placeholder="Role (e.g. SDE)" value={form.role} onChange={e => setForm(p => ({ ...p, role: e.target.value }))} style={{ padding: '10px', borderRadius: '5px' }} />
@@ -256,7 +257,7 @@ export default function TpoDashboard({ user, onLogout }) {
               </div>
 
               {/* SECTION 2: Drive Details */}
-              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: '#e8651a' }}>Drive Details</h5>
+              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: '#e8651a' }}>2. Drive Details</h5>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '25px' }}>
                 <div>
                   <label style={{ fontSize: '12px', color: 'inherit', opacity: '0.7', display: 'block', marginBottom: '5px' }}>Drive Date</label>
@@ -327,7 +328,7 @@ export default function TpoDashboard({ user, onLogout }) {
               </div>
 
               {/* SECTION 4: Process */}
-              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: '#e8651a' }}>4. Selection Process</h5>
+              <h5 style={{ borderBottom: '2px solid var(--border-color, #eee)', paddingBottom: '10px', marginBottom: '15px', color: '#e8651a' }}>4. Select rounds in the order of the recruitment process (first round to final round).</h5>
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', marginBottom: '25px' }}>
                 {PROCESS_ROUNDS.map(round => (
                   <label key={round} style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '13px', cursor: 'pointer', background: 'var(--pill-bg, #f5f7fb)', padding: '8px 12px', borderRadius: '20px' }}>
@@ -473,22 +474,23 @@ export default function TpoDashboard({ user, onLogout }) {
                     </tr>
                   </thead>
 
+
                   <tbody>
                     {(selectedDrive?.students || []).map((s, i) => {
-                      console.log("ROUND INDEX RAW:", s.roundIndex);
-
-                      // ✅ FIXED INDEX (handles 1-based backend)
-                      const index = Number(s.roundIndex ?? 1) - 1;
+                      // const index = Number(s.roundIndex ?? 1) - 1;
+                      const index = Number(s.roundIndex ?? 0);
 
                       return (
                         <tr key={i}>
                           <td>{s.name}</td>
                           <td>{s.email}</td>
 
+                          {/* <td>
+                            {driveRounds[index] || "Aptitude Test"}
+                          </td> */}
                           <td>
-                            {driveRounds.includes(s.currentRound)
-                              ? s.currentRound
-                              : driveRounds[s.roundIndex] || "Aptitude Test"}
+                            {/* {driveRounds[index] || "Completed"} */}
+                            {driveRounds.length > 0 ? driveRounds[index] : "No Rounds"}
                           </td>
 
                           <td>

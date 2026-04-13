@@ -2,16 +2,19 @@ package com.recruitment.placement_system.service;
 
 import java.util.*;
 
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.recruitment.placement_system.entity.Application;
 import com.recruitment.placement_system.entity.DriveStudent;
+import com.recruitment.placement_system.entity.PatDrive;
 import com.recruitment.placement_system.entity.StudentProfile;
 import com.recruitment.placement_system.entity.User;
 import com.recruitment.placement_system.repository.ApplicationRepository;
 import com.recruitment.placement_system.repository.DriveStudentRepository;
+import com.recruitment.placement_system.repository.PatDriveRepository;
 import com.recruitment.placement_system.repository.StudentProfileRepository;
 import com.recruitment.placement_system.repository.UserRepository;
 
@@ -30,6 +33,9 @@ public class ApplicationService {
     // ✅ NEW: injected so we can check profile completeness before applying
     @Autowired
     private StudentProfileRepository studentProfileRepository;
+
+    @Autowired
+    private PatDriveRepository patDriveRepository;
 
     // ── Apply for Drive ────────────────────────────────────────────────────
     @Transactional
@@ -53,13 +59,17 @@ public class ApplicationService {
                     "technical skill) before applying for a drive.");
         }
 
+        // // ── 3. Default stage / status ──────────────────────────────────────
+        // if (application.getStage() == null || application.getStage().isBlank()) {
+        //     application.setStage("Applied");
+        // }
+        // if (application.getStatus() == null || application.getStatus().isBlank()) {
+        //     application.setStatus("Pending");
+        // }
         // ── 3. Default stage / status ──────────────────────────────────────
-        if (application.getStage() == null || application.getStage().isBlank()) {
-            application.setStage("Applied");
-        }
-        if (application.getStatus() == null || application.getStatus().isBlank()) {
-            application.setStatus("Pending");
-        }
+        application.setStage("Round 1");
+        application.setStatus("Appeared");
+        application.setRoundIndex(1);
 
         User student = userRepository.findById((long) application.getStudentId())
             .orElseThrow(() -> new RuntimeException("Student not found"));
@@ -71,7 +81,7 @@ public class ApplicationService {
             driveStudent.setDriveId(saved.getDriveId());
             driveStudent.setStudentName(student.getFullName());
             driveStudent.setStudentEmail(student.getEmail());
-            driveStudent.setRoundIndex(1);
+            driveStudent.setRoundIndex(0);
             driveStudent.setStatus(saved.getStatus());
             driveStudentRepository.save(driveStudent);
         }
@@ -129,8 +139,24 @@ public class ApplicationService {
         return repository.save(app);
     }
 
+    // @Transactional
+    // public void syncDriveStudentProgress(Long driveId, String studentEmail, int roundIndex, String status) {
+    //     if (studentEmail == null || studentEmail.isBlank()) {
+    //         return;
+    //     }
+
+    //     userRepository.findByEmail(studentEmail)
+    //         .flatMap(user -> repository.findByStudentIdAndDriveId(Math.toIntExact(user.getId()), driveId))
+    //         .ifPresent(application -> {
+    //             application.setStage(resolveStage(roundIndex, status));
+    //             application.setStatus(resolveStatus(status));
+    //             repository.save(application);
+    //         });
+    // }
+    // 
     @Transactional
-    public void syncDriveStudentProgress(Long driveId, String studentEmail, int roundIndex, String status) {
+    public void syncDriveStudentProgress(Long driveId, String studentEmail, int roundIndex, String action) {
+
         if (studentEmail == null || studentEmail.isBlank()) {
             return;
         }
@@ -138,8 +164,41 @@ public class ApplicationService {
         userRepository.findByEmail(studentEmail)
             .flatMap(user -> repository.findByStudentIdAndDriveId(Math.toIntExact(user.getId()), driveId))
             .ifPresent(application -> {
-                application.setStage(resolveStage(roundIndex, status));
-                application.setStatus(resolveStatus(status));
+
+                // ✅ STEP 1: Fetch drive rounds dynamically
+                PatDrive drive = patDriveRepository.findById(driveId)
+                        .orElseThrow(() -> new RuntimeException("Drive not found"));
+
+                List<String> rounds = Arrays.stream(drive.getRounds().split(","))
+                        .map(String::trim)
+                        .filter(r -> !r.isEmpty())
+                        .toList();
+
+                int TOTAL_ROUNDS = rounds.size();
+
+                // ❌ CASE: REJECT
+                if ("Rejected".equalsIgnoreCase(action)) {
+                    application.setStatus("Rejected");
+                    application.setStage("Rejected in " + rounds.get(roundIndex - 1));
+                }
+
+                // ✅ CASE: ADVANCE
+                else if ("Advance".equalsIgnoreCase(action)) {
+
+                    // 👉 NOT FINAL ROUND
+                    if (roundIndex < TOTAL_ROUNDS) {
+                        application.setRoundIndex(roundIndex + 1);
+                        application.setStage(rounds.get(roundIndex)); // next round
+                        application.setStatus("Appeared"); // ✅ FIXED
+                    }
+
+                    // 👉 FINAL ROUND
+                    else {
+                        application.setStatus("Selected"); // ✅ ONLY HERE
+                        application.setStage("Selected");
+                    }
+                }
+
                 repository.save(application);
             });
     }
@@ -177,23 +236,23 @@ public class ApplicationService {
         }
     }
 
-    private String resolveStage(int roundIndex, String status) {
-        if (roundIndex <= 0) {
-            return "Applied";
-        }
-        if ("Rejected".equalsIgnoreCase(status)) {
-            return "Rejected in Round " + roundIndex;
-        }
-        if ("Selected".equalsIgnoreCase(status)) {
-            return "Round " + roundIndex + " Cleared";
-        }
-        return "Round " + roundIndex;
-    }
+    // private String resolveStage(int roundIndex, String status) {
+    //     if (roundIndex <= 0) {
+    //         return "Applied";
+    //     }
+    //     if ("Rejected".equalsIgnoreCase(status)) {
+    //         return "Rejected in Round " + roundIndex;
+    //     }
+    //     if ("Selected".equalsIgnoreCase(status)) {
+    //         return "Round " + roundIndex + " Cleared";
+    //     }
+    //     return "Round " + roundIndex;
+    // }
 
-    private String resolveStatus(String status) {
-        if (status == null || status.isBlank()) {
-            return "Pending";
-        }
-        return status;
-    }
+    // private String resolveStatus(String status) {
+    //     if (status == null || status.isBlank()) {
+    //         return "Pending";
+    //     }
+    //     return status;
+    // }
 }
