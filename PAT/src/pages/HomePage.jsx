@@ -1,10 +1,15 @@
+
+import { useNavigate } from "react-router-dom";
+
 export default function HomePage({ onGoToInfo, onGoToLogin, onGoToSignup }) {
+  const navigate = useNavigate();
   return (
     <div>
       <div className="navbar">
         <div className="logo">Placement<span>Portal</span></div>
         <nav>
-          <a onClick={() => onGoToInfo('contact')}>Contact</a>
+          
+          <a onClick={() => navigate("/contactus")}>Contact Us</a>
 
           {/* ✅ NEW SIGNUP BUTTON */}
           <button 

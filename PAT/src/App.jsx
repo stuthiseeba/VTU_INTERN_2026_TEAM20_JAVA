@@ -8,6 +8,7 @@ import SignupPage from "./pages/SignupPage";
 import StudentDashboard from "./pages/StudentDashboard";
 import CoordinatorDashboard from "./pages/CoordinatorDashboard";
 import TpoDashboard from "./pages/TpoDashboard";
+import ContactPage from "./pages/ContactPage";
 
 function normalizeUser(rawUser) {
   if (!rawUser) return null;
@@ -128,6 +129,7 @@ export default function App() {
         <Route path="/tpo"           element={<TpoWrapper user={user} onLogout={handleLogout} />} />
         <Route path="/tpo/*"         element={<TpoWrapper user={user} onLogout={handleLogout} />} />
         <Route path="*"              element={<Navigate to="/" replace />} />
+        <Route path="/contactus"     element={<ContactPage />} />
       </Routes>
       <button className="theme-toggle" onClick={() => setDark(d => !d)} title="Toggle theme">
         {dark ? "☀️" : "🌙"}

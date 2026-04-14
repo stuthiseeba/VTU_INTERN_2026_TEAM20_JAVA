@@ -46,6 +46,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/applications/drive/**").permitAll()
                 .requestMatchers(HttpMethod.POST, "/applications").permitAll()
                 .requestMatchers(HttpMethod.DELETE, "/applications/*").permitAll()
+                .requestMatchers("/api/contact/**").permitAll()
 
                 // ── Team 2: Drive and Application endpoints (protected) ────
                 .anyRequest().authenticated()
