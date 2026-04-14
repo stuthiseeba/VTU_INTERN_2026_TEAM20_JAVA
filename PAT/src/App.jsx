@@ -9,20 +9,11 @@ import StudentDashboard from "./pages/StudentDashboard";
 import CoordinatorDashboard from "./pages/CoordinatorDashboard";
 import TpoDashboard from "./pages/TpoDashboard";
 
-
 function normalizeUser(rawUser) {
   if (!rawUser) return null;
-
   const userId = rawUser.userId ?? rawUser.id ?? null;
   const name = rawUser.name ?? rawUser.fullName ?? "";
-
-  return {
-    ...rawUser,
-    id: rawUser.id ?? userId,
-    userId,
-    name,
-    fullName: rawUser.fullName ?? name,
-  };
+  return { ...rawUser, id: rawUser.id ?? userId, userId, name, fullName: rawUser.fullName ?? name };
 }
 
 function loadUser() {
@@ -30,8 +21,8 @@ function loadUser() {
   catch { return null; }
 }
 function saveUser(user) {
-  const normalizedUser = normalizeUser(user);
-  if (normalizedUser) localStorage.setItem("pat_user", JSON.stringify(normalizedUser));
+  const n = normalizeUser(user);
+  if (n) localStorage.setItem("pat_user", JSON.stringify(n));
   else localStorage.removeItem("pat_user");
 }
 
@@ -69,9 +60,9 @@ function LoginPageWrapper({ onLoginSuccess }) {
       onGoSignup={() => navigate("/signup")}
       onLoginSuccess={(data) => {
         onLoginSuccess(data);
-        if (data.role === "STUDENT")          navigate("/student");
-        else if (data.role === "COORDINATOR") navigate("/coordinator");
-        else if (data.role === "TPO")         navigate("/tpo");
+        if (data.role === "STUDENT")          navigate("/student/overview");
+        else if (data.role === "COORDINATOR") navigate("/coordinator/overview");
+        else if (data.role === "TPO")         navigate("/tpo/overview");
         else alert("Login successful! Role: " + data.role + "\n(Dashboard coming soon)");
       }}
     />
@@ -80,12 +71,7 @@ function LoginPageWrapper({ onLoginSuccess }) {
 
 function SignupPageWrapper() {
   const navigate = useNavigate();
-  return (
-    <SignupPage
-      onGoHome={() => navigate("/")}
-      onGoLogin={() => navigate("/login")}
-    />
-  );
+  return <SignupPage onGoHome={() => navigate("/")} onGoLogin={() => navigate("/login")} />;
 }
 
 function StudentWrapper({ user, onLogout }) {
@@ -125,28 +111,24 @@ export default function App() {
     localStorage.setItem("pat_theme", dark ? "dark" : "light");
   }, [dark]);
 
-  function handleLoginSuccess(data) {
-    const normalizedUser = normalizeUser(data);
-    setUser(normalizedUser);
-    saveUser(normalizedUser);
-  }
-  function handleLogout()           { setUser(null); saveUser(null); }
+  function handleLoginSuccess(data) { const n = normalizeUser(data); setUser(n); saveUser(n); }
+  function handleLogout() { setUser(null); saveUser(null); }
 
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/"            element={<HomePageWrapper onGoToInfo={setInfoKey} />} />
-        <Route path="/info/:key"   element={<InfoPageWrapper />} />
-        <Route path="/login"       element={<LoginPageWrapper onLoginSuccess={handleLoginSuccess} />} />
-        <Route path="/signup"      element={<SignupPageWrapper />} />
-        <Route path="/student"     element={<StudentWrapper     user={user} onLogout={handleLogout} />} />
-        <Route path="/coordinator" element={<CoordinatorWrapper user={user} onLogout={handleLogout} />} />
-        <Route path="/tpo"         element={<TpoWrapper         user={user} onLogout={handleLogout} />} />
-        <Route path="/tpo/*" element={<TpoDashboard user={user} onLogout={handleLogout} />} />
-        <Route path="*"            element={<Navigate to="/" replace />} />
+        <Route path="/"              element={<HomePageWrapper onGoToInfo={setInfoKey} />} />
+        <Route path="/info/:key"     element={<InfoPageWrapper />} />
+        <Route path="/login"         element={<LoginPageWrapper onLoginSuccess={handleLoginSuccess} />} />
+        <Route path="/signup"        element={<SignupPageWrapper />} />
+        <Route path="/student"       element={<StudentWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="/student/*"     element={<StudentWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="/coordinator"   element={<CoordinatorWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="/coordinator/*" element={<CoordinatorWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="/tpo"           element={<TpoWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="/tpo/*"         element={<TpoWrapper user={user} onLogout={handleLogout} />} />
+        <Route path="*"              element={<Navigate to="/" replace />} />
       </Routes>
-
-      {/* 🌙 / ☀️ floating theme toggle — visible on every page */}
       <button className="theme-toggle" onClick={() => setDark(d => !d)} title="Toggle theme">
         {dark ? "☀️" : "🌙"}
       </button>

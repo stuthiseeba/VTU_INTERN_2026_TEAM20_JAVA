@@ -22,7 +22,7 @@ export default function HomePage({ onGoToInfo, onGoToLogin, onGoToSignup }) {
               <a onClick={() => onGoToLogin('Coordinator')}>Coordinator</a>
               <a onClick={() => onGoToLogin('TPO')}>TPO</a>
               <a onClick={() => onGoToLogin('Admin')}>Admin</a>
-              <a onClick={() => onGoToLogin('HR')}>HR</a>
+              {/* <a onClick={() => onGoToLogin('HR')}>HR</a> */}
             </div>
           </div>
         </nav>

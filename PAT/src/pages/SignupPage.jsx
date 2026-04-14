@@ -213,7 +213,6 @@ export default function SignupPage({ onGoHome, onGoLogin }) {
             <option value="COORDINATOR">Coordinator</option>
             <option value="TPO">TPO</option>
             <option value="ADMIN">Admin</option>
-            <option value="HR">HR</option>
           </select>
         </div>
 
