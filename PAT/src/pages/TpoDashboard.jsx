@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Routes, Route, useNavigate, useLocation } from "react-router-dom";
 
 const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AIML", "DS"];
 const PROCESS_ROUNDS = ["Aptitude Test", "Coding Round", "Technical Interview", "Managerial Interview", "HR Interview", "Group Discussion"];
@@ -17,10 +18,12 @@ function latestStudents(studentRows) {
 }
 
 export default function TpoDashboard({ user, onLogout }) {
-  const [tab, setTab] = useState("tpo-overview");
+  const navigate = useNavigate();     // ✅ ADD HERE
+  const location = useLocation();     // ✅ ADD HERE
   const [drives, setDrives] = useState([]);
   const [funnelDriveId, setFunnelDriveId] = useState(null);
   const [applications, setApplications] = useState([]);
+
 
   // Initialized with all the new structured fields
   const [form, setForm] = useState({
@@ -127,7 +130,7 @@ export default function TpoDashboard({ user, onLogout }) {
       }
       if (funnelDriveId === d.id) {
         setFunnelDriveId(null);
-        setTab("tpo-drives");
+        navigate("/tpo/drives");
       }
       setApplications(prev => prev.filter(app => app.driveId !== d.id));
       await loadDrives();
@@ -164,7 +167,7 @@ export default function TpoDashboard({ user, onLogout }) {
     }
   }
 
-  function openFunnel(driveId) { setFunnelDriveId(driveId); setTab("tpo-funnel"); }
+  function openFunnel(driveId) { setFunnelDriveId(driveId); navigate("/tpo/funnel"); }
 
   const selectedDrive = drives.find(d => d.id === funnelDriveId);
   const driveRounds =
@@ -188,15 +191,25 @@ export default function TpoDashboard({ user, onLogout }) {
           <div className="s-role">TPO</div>
         </div>
         <div className="dash-nav">
-          {[['tpo-overview', '📊', 'Overview'], ['tpo-drives', '🏢', 'Manage Drives'], ['tpo-students', '👥', 'All Students'], ['tpo-funnel', '🔄', 'Recruitment Funnel'], ['tpo-applications', '📄', 'Applications']].map(([id, icon, label]) => (
-            <a key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}><span className="nav-icon">{icon}</span> {label}</a>
+          {[
+            ['tpo-overview', '📊', 'Overview'],
+            ['tpo-drives', '🏢', 'Schedule Drives'],
+            ['tpo-funnel', '🔄', 'Recruitment Funnel']
+          ].map(([id, icon, label]) => (
+            <a
+              key={id}
+              className={location.pathname === `/tpo/${id.split('-')[1]}` ? 'active' : ''}
+              onClick={() => navigate(`/tpo/${id.split('-')[1]}`)}
+            >
+              <span className="nav-icon">{icon}</span> {label}
+            </a>
           ))}
         </div>
         <div className="dash-logout"><button onClick={onLogout}>← Logout</button></div>
       </div>
 
       <div className="dash-main">
-        {tab === 'tpo-overview' && (
+        {location.pathname === "/tpo/overview" && (
           <div>
             <div className="dash-topbar"><div><h1>TPO Dashboard Overview</h1><p>Manage placement drives and track progress</p></div></div>
             <div className="stat-cards">
@@ -222,7 +235,8 @@ export default function TpoDashboard({ user, onLogout }) {
           </div>
         )}
 
-        {tab === 'tpo-drives' && (
+        
+        {location.pathname === "/tpo/drives" && (
           <div>
             <div className="dash-topbar"><div><h1>Manage Drives</h1><p>Create and manage placement drives</p></div></div>
 
@@ -402,155 +416,160 @@ export default function TpoDashboard({ user, onLogout }) {
           </div>
         )}
 
-        {tab === 'tpo-students' && (
+        
+        {location.pathname === "/tpo/funnel" && (
           <div>
-            <div className="dash-topbar"><div><h1>All Students</h1><p>View all students who have applied</p></div></div>
-            <div className="profile-card">
-              <h3>Student List</h3>
-              <div className="coord-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Email</th>
-                      <th>Drive</th>
-                      <th>Round</th>
-                      <th>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {allStudents.map((s, i) => (
-                      <tr key={i}>
-                        <td>{s.name}</td>
-                        <td>{s.email}</td>
-                        <td>{s.driveCompany}</td>
 
-
-                        <td>
-                          {drives.find(d => d.company === s.driveCompany)?.rounds
-                            ?.split(',')
-                            ?.[s.roundIndex] || "Completed"}
-                        </td>
-                        <td><span className={`badge badge-${s.status.toLowerCase()}`}>{s.status}</span></td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {tab === 'tpo-funnel' && selectedDrive?.students && (
-          <div>
-            <div className="dash-topbar">
-              <div>
-                <h1>Recruitment Funnel — {selectedDrive.company}</h1>
-                <p>Track student progress through rounds</p>
-              </div>
-              <button
-                className="action-btn btn-view"
-                onClick={() => {
-                  setFunnelDriveId(null);
-                  setTab("tpo-drives");
-                }}
-              >
-                ← Back
-              </button>
-            </div>
-
-            <div className="profile-card">
-              <h3>Student Progress</h3>
-
-              <div className="coord-table">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Student Name</th>
-                      <th>Email</th>
-                      <th>Current Round</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-
-
-                  <tbody>
-                    {(selectedDrive?.students || []).map((s, i) => {
-                      // const index = Number(s.roundIndex ?? 1) - 1;
-                      const index = Number(s.roundIndex ?? 0);
-
-                      return (
-                        <tr key={i}>
-                          <td>{s.name}</td>
-                          <td>{s.email}</td>
-
-                          {/* <td>
-                            {driveRounds[index] || "Aptitude Test"}
-                          </td> */}
-                          <td>
-                            {/* {driveRounds[index] || "Completed"} */}
-                            {driveRounds.length > 0 ? driveRounds[index] : "No Rounds"}
-                          </td>
-
-                          <td>
-                            <span className={`badge badge-${s.status.toLowerCase()}`}>
-                              {s.status}
-                            </span>
-                          </td>
-
-                          <td>
-                            <button
-                              className="action-btn btn-verify"
-                              onClick={() => advanceStudent(s.id)}
-                            >
-                              Advance
-                            </button>
-
-                            <button
-                              className="action-btn btn-delete"
-                              onClick={() => rejectStudent(s.id)}
-                            >
-                              Reject
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-
-                </table>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {tab === 'tpo-applications' && (
-          <div>
-            <div className="dash-topbar"><h1>Student Applications</h1><p>Review applications for your drives</p></div>
-            {applications.length === 0 ? (
-              <div className="profile-card"><div className="empty-state"><div className="e-icon">📄</div><p>No applications yet. Select a drive to view.</p></div></div>
-            ) : (
-              applications.map((app, i) => (
-                <div className="content-item" key={i}>
-                  <div className="ci-text">
-                    <h4>Application #{app.applicationId}</h4>
-                    <p>Student ID: {app.studentId} | Drive ID: {app.driveId} | Stage: {app.stage} | Status: {app.status}</p>
-                  </div>
-                  <div className="ci-actions">
-                    <button className="action-btn btn-view">View Details</button>
+            {/* ===================== */}
+            {/* 🔹 CASE 1: DRIVE LIST */}
+            {/* ===================== */}
+            {!selectedDrive && (
+              <>
+                <div className="dash-topbar">
+                  <div>
+                    <h1>Recruitment Funnel</h1>
+                    <p>Select a drive to track student progress</p>
                   </div>
                 </div>
-              ))
+
+                <div className="profile-card">
+                  <h3>Available Drives</h3>
+
+                  {drives.length === 0 ? (
+                    <p>No drives available.</p>
+                  ) : (
+                    drives.map((d, i) => (
+                      <div className="content-item" key={i}>
+                        <div className="ci-text">
+                          <h4>{d.company} — {d.role}</h4>
+                          <p>
+                            📅 {d.date} • {d.students.length} applicants • Status:{" "}
+                            <span style={{ fontWeight: 'bold', color: d.status === 'Closed' ? 'red' : 'green' }}>
+                              {d.status}
+                            </span>
+                          </p>
+                        </div>
+
+                        <div className="ci-actions">
+                          <button
+                            className="action-btn btn-view"
+                            onClick={() => openFunnel(d.id)}
+                          >
+                            View Funnel
+                          </button>
+
+                          <button
+                            className="action-btn btn-delete"
+                            onClick={() => removeDrive(i)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </>
             )}
-            <div className="profile-card">
-              <h3>Select Drive to View Applications</h3>
-              {drives.map((d, i) => (
-                <button key={i} className="action-btn btn-view" onClick={() => loadApplications(d.id)}>View Applications for {d.company}</button>
-              ))}
-            </div>
+
+            {/* ===================== */}
+            {/* 🔹 CASE 2: FUNNEL VIEW */}
+            {/* ===================== */}
+            {selectedDrive && (
+              <>
+                <div className="dash-topbar">
+                  <div>
+                    <h1>Recruitment Funnel — {selectedDrive.company}</h1>
+                    <p>Track student progress through rounds</p>
+                  </div>
+
+                  <button
+                    className="action-btn btn-view"
+                    onClick={() => {
+                      setFunnelDriveId(null);
+                      navigate("/tpo/drives");
+                    }}
+                  
+                  >
+                    ← Back to Drives
+                  </button>
+                </div>
+
+                <div className="profile-card">
+                  <h3>Student Progress</h3>
+
+                  <div className="coord-table">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Student Name</th>
+                          <th>Email</th>
+                          <th>Current Round</th>
+                          <th>Status</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {(selectedDrive.students || []).length === 0 ? (
+                          <tr>
+                            <td colSpan="5" style={{ textAlign: "center" }}>
+                              No students applied yet.
+                            </td>
+                          </tr>
+                        ) : (
+                          selectedDrive.students.map((s, i) => {
+                            const index = Number(s.roundIndex ?? 0);
+
+                            return (
+                              <tr key={i}>
+                                <td>{s.name}</td>
+                                <td>{s.email}</td>
+
+                                <td>
+                                  {driveRounds.length > 0
+                                    ? driveRounds[index] || "Completed"
+                                    : "No Rounds"}
+                                </td>
+
+                                <td>
+                                  <span className={`badge badge-${s.status.toLowerCase()}`}>
+                                    {s.status}
+                                  </span>
+                                </td>
+
+                                <td>
+                                  <button
+                                    className="action-btn btn-verify"
+                                    onClick={() => advanceStudent(s.id)}
+                                  >
+                                    Advance
+                                  </button>
+
+                                  <button
+                                    className="action-btn btn-delete"
+                                    onClick={() => rejectStudent(s.id)}
+                                  >
+                                    Reject
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
+            )}
+
           </div>
         )}
+
+
+
+
       </div>
     </div>
   );

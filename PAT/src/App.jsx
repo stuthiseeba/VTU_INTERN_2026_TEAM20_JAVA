@@ -9,6 +9,7 @@ import StudentDashboard from "./pages/StudentDashboard";
 import CoordinatorDashboard from "./pages/CoordinatorDashboard";
 import TpoDashboard from "./pages/TpoDashboard";
 
+
 function normalizeUser(rawUser) {
   if (!rawUser) return null;
 
@@ -141,6 +142,7 @@ export default function App() {
         <Route path="/student"     element={<StudentWrapper     user={user} onLogout={handleLogout} />} />
         <Route path="/coordinator" element={<CoordinatorWrapper user={user} onLogout={handleLogout} />} />
         <Route path="/tpo"         element={<TpoWrapper         user={user} onLogout={handleLogout} />} />
+        <Route path="/tpo/*" element={<TpoDashboard user={user} onLogout={handleLogout} />} />
         <Route path="*"            element={<Navigate to="/" replace />} />
       </Routes>
 
