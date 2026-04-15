@@ -131,14 +131,30 @@ body { background: #fff8f0; color: #2d1a0e; }
 }
 
 /* HERO */
-.hero { position: relative; min-height: 500px; display: flex; align-items: center; padding: 70px 60px; overflow: hidden; background: #1a0800; }
+.hero {
+  position: relative;
+  height: 100vh; /* 🔥 THIS FIXES THE WHITE SPACE */
+  width: 100%;
+  overflow: hidden;
+}
 .hero-bg { position: absolute; inset: 0; background-image: url('https://images.unsplash.com/photo-1541339907198-e08756dedf3f?w=1400&q=80'); background-size: cover; background-position: center top; filter: brightness(0.22); z-index: 0; }
-.hero-inner { position: relative; z-index: 1; width: 100%; }
-.hero-text { max-width: 560px; }
-.hero-tag { display: inline-block; background: rgba(255,107,53,0.2); color: #ffb347; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 6px 14px; border-radius: 20px; margin-bottom: 20px; border: 1px solid rgba(255,107,53,0.4); }
+/* .hero-inner { position: relative; z-index: 1; width: 100%; } */
+.hero-inner {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  align-items: flex-start;   /* ⬆️ push content to top */
+  justify-content: flex-start;
+}
+.hero-text { max-width: 580px;  margin-top: -60px;}
+.hero-tag { display: inline-block; background: rgba(255,107,53,0.2); color: #ffb347; font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; padding: 6px 14px; border-radius: 20px; margin-bottom: 10px; border: 1px solid rgba(255,107,53,0.4); }
 .hero-text h1 { font-size: 46px; font-weight: 800; color: #fff; line-height: 1.2; margin-bottom: 18px; }
 .hero-text h1 span { color: #ffcd3c; }
 .hero-text p { font-size: 17px; color: #ccc; line-height: 1.75; }
+
 
 /* ROLES SECTION */
 .roles-section { background: #fff8f0; padding: 60px 60px; }
@@ -492,4 +508,73 @@ body { background: #fff8f0; color: #2d1a0e; }
   background: #1e1e1e;
   border-color: #444;
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+
+/* REMOVE BLACK OUTLINE FROM DROPDOWNS */
+.form-field select {
+  outline: none;
+  box-shadow: none;
+}
+
+.form-field select:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255,107,53,0.15); /* optional soft glow */
+  border-color: #ff6b35;
+}
+.form-field select:focus-visible {
+  outline: none;
+}
+
+.hero-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 80px;
+  gap: 40px;
+}
+
+/* RIGHT SIDE CONTAINER */
+.hero-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* GLASS EFFECT */
+.glass-card {
+  width: 260px;
+  padding: 38px;
+  border-radius: 15px;
+
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+/* HOVER EFFECT */
+.glass-card:hover {
+  transform: translateY(-5px) scale(1.03);
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* ICON */
+.glass-card .rc-icon {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+/* TEXT */
+.glass-card h3 {
+  margin-bottom: 5px;
+}
+
+.glass-card p {
+  font-size: 13px;
+  opacity: 0.9;
 }

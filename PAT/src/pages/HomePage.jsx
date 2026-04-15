@@ -35,36 +35,47 @@ export default function HomePage({ onGoToInfo, onGoToLogin, onGoToSignup }) {
 
       <div className="hero">
         <div className="hero-bg"></div>
+
         <div className="hero-inner">
+
+          {/* LEFT TEXT */}
           <div className="hero-text">
             <div className="hero-tag">Campus Placement Platform</div>
-            <h1>Empowering Students<br />Through <span>Smart Placement</span><br />Automation</h1>
-            <p>Connect with top recruiters, track applications, and manage your entire campus placement journey on one unified platform.</p>
+            <h1>
+              Empowering Students<br />
+              Through <span>Smart Placement</span><br />
+              Automation
+            </h1>
+            <p>
+              Track applications and manage your entire campus placement journey on one unified platform.
+            </p>
           </div>
+
+          {/* RIGHT GLASS CARDS */}
+          <div className="hero-cards">
+            <div className="glass-card" onClick={() => onGoToInfo('announcements')}>
+              <div className="rc-icon">📢</div>
+              <h3>Announcements</h3>
+              <p>Stay updated with latest placement news and alerts.</p>
+            </div>
+
+            <div className="glass-card" onClick={() => onGoToInfo('partnerships')}>
+              <div className="rc-icon">🤝</div>
+              <h3>Our Partnerships</h3>
+              <p>Companies we have partnered with.</p>
+            </div>
+
+            <div className="glass-card" >
+              <div className="rc-icon">📊</div>
+              <h3>Analytics</h3>
+              <p>Gain insights into placement trends and student performance in real-time.</p>
+            </div>
+          </div>
+
         </div>
       </div>
 
-      <div className="roles-section">
-        <div className="section-header">
-          <h2>What We Offer</h2>
-          <p>Everything you need to manage campus placements in one place</p>
-          <div className="line"></div>
-        </div>
-        <div className="role-cards">
-          <div className="role-card" onClick={() => onGoToInfo('announcements')}>
-            <div className="rc-icon">📢</div>
-            <h3>Announcements</h3>
-            <p>Stay updated with latest placement news and alerts</p>
-          </div>
-          
-          <div className="role-card" onClick={() => onGoToInfo('partnerships')}>
-            <div className="rc-icon">🤝</div>
-            <h3>Our Partnerships</h3>
-            <p>Companies we have partnered with</p>
-          </div>
 
-        </div>
-      </div>
     </div>
   );
 }
