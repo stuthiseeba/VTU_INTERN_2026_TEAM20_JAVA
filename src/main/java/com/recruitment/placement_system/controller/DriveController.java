@@ -46,6 +46,11 @@ public class DriveController {
         return service.updateDrive(id, drive);
     }
 
+    @PutMapping("/{id}/status")
+public Drive updateDriveStatus(@PathVariable int id, @RequestParam String status)
+
+
+
     // ✅ NEW: Delete Drive
     @DeleteMapping("/{id}")
     public String deleteDrive(@PathVariable int id) {

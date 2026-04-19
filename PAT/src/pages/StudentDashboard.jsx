@@ -36,7 +36,7 @@ function AppliedDrives({ userId, reloadTick }) {
       const res = await fetch(`http://localhost:8080/applications/${app.applicationId}`, { method: "DELETE" });
       if (!res.ok) throw new Error();
       setApplications(prev => prev.filter(a => a.applicationId !== app.applicationId));
-    } catch { alert("Failed to delete application."); }
+    } catch { setSuccessMessage("Failed to delete application."); }
   }
 
   return (
@@ -76,6 +76,7 @@ function AvailableDrives({ userId, userName, userEmail, profile, softSkills, tec
   const [applying, setApplying] = useState(null);
   const [appData, setAppData] = useState(null);
   const [reloadTick, setReloadTick] = useState(0);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const profilePct = calculateProfileCompletion(profile, softSkills, techSkills);
   const profileComplete = profilePct === 100;
@@ -89,7 +90,7 @@ function AvailableDrives({ userId, userName, userEmail, profile, softSkills, tec
 
   function openApply(drive) {
     if (!profileComplete) {
-      alert("Your profile is only " + profilePct + "% complete.\nPlease complete your profile before applying for drives.");
+      setSuccessMessage("Your profile is only " + profilePct + "% complete.\nPlease complete your profile before applying for drives.");
       if (onGoToProfile) onGoToProfile();
       return;
     }
@@ -99,7 +100,7 @@ function AvailableDrives({ userId, userName, userEmail, profile, softSkills, tec
         setAppData({ name: d.name || userName || '', email: d.email || userEmail || '', phone: d.phone || '', linkedin: d.linkedin || '', address: d.address || '', resumeLink: d.resumeLink || '', cgpa: d.cgpa || '', department: d.department || '', college: d.college || '', degreeName: d.degreeName || '', specialization: d.specialization || '', yearDegree: d.yearDegree || '', softSkills: d.softSkills || '', techSkills: d.techSkills || '' });
         setApplying(drive);
       })
-      .catch(() => alert("Failed to load profile. Please complete your profile first."));
+      .catch(() => setSuccessMessage("Failed to load profile. Please complete your profile first."));
   }
 
   function f(field) { return { value: appData[field], onChange: e => setAppData(p => ({ ...p, [field]: e.target.value })) }; }
@@ -112,11 +113,11 @@ function AvailableDrives({ userId, userName, userEmail, profile, softSkills, tec
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || "Failed to submit application.");
-      alert(`Application submitted to ${applying.company}! Good luck!`);
+      setSuccessMessage(`Application submitted to ${applying.company}! Good luck!`);
       setApplying(null); setAppData(null);
       setReloadTick(prev => prev + 1);
       if (onApplicationSuccess) onApplicationSuccess();
-    } catch (error) { alert(error.message || "Failed to submit application. Please try again."); }
+    } catch (error) { setSuccessMessage(error.message || "Failed to submit application. Please try again."); }
   }
 
   if (applying && appData) {
@@ -234,6 +235,7 @@ function AvailableDrives({ userId, userName, userEmail, profile, softSkills, tec
 }
 
 export default function StudentDashboard({ user, onLogout }) {
+  const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -269,14 +271,31 @@ export default function StudentDashboard({ user, onLogout }) {
       .then(data => setOverviewApps(Array.isArray(data) ? data : []))
       .catch(() => {});
   }, [user.userId, reloadTick]);
+  useEffect(() => {
+  if (successMessage) {
+    const timer = setTimeout(() => {
+      setSuccessMessage("");
+    }, 3000);
 
-  async function saveProfile() {
+    return () => clearTimeout(timer);
+  }
+}, [successMessage]);
+
+  async function saveProfile(type = "profile") {
     const body = { userId: user.userId, ...profile, softSkills: softSkills.join(","), techSkills: techSkills.join(",") };
     try {
       const res = await fetch("http://localhost:8080/api/student/profile", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-      if (res.ok) { alert("Profile saved successfully!"); setReloadTick(t => t + 1); }
-      else alert("Failed to save profile.");
-    } catch { alert("Cannot connect to server."); }
+      if (res.ok) {
+  const messages = {
+    profile: "✅ Profile saved successfully!",
+    academic: "🎓 Academic records saved!",
+    skills: "💡 Skills saved successfully!",
+    identification: "🪪 Identification saved!"
+  };
+
+  setSuccessMessage(messages[type] || "Saved successfully!"); setReloadTick(t => t + 1); }
+      else setSuccessMessage("Failed to save profile.");
+    } catch { setSuccessMessage("Cannot connect to server."); }
   }
 
   function p(field) { return { value: profile[field], onChange: e => setProfile(prev => ({ ...prev, [field]: e.target.value })) }; }
@@ -313,6 +332,27 @@ export default function StudentDashboard({ user, onLogout }) {
       </div>
 
       <div className="dash-main">
+        {successMessage && (
+  <div style={{
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    background: "#d4edda",
+    color: "#155724",
+    padding: "20px 30px",
+    borderRadius: "10px",
+    fontSize: "18px",
+    fontWeight: "bold",
+    boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
+    zIndex: 9999,
+    textAlign: "center",
+    minWidth: "300px",
+    animation: "fadeIn 0.3s ease"
+  }}>
+    {successMessage}
+  </div>
+)}
         {activeTab === 'overview' && (
           <div>
             <div className="dash-topbar"><div><h1>Welcome back, {user.name?.split(' ')[0]}</h1><p>Here's your placement activity summary</p></div></div>
@@ -366,7 +406,7 @@ export default function StudentDashboard({ user, onLogout }) {
                 <div className="form-field"><label>Resume Link (Google Drive)</label><input type="url" {...p('resumeLink')} placeholder="https://drive.google.com/your-resume-folder" /></div>
                 <div className="form-field full"><label>Address</label><textarea {...p('address')} placeholder="Your full address"></textarea></div>
               </div>
-              <button className="save-btn" onClick={saveProfile}>Save Profile</button>
+              <button className="save-btn" onClick={() => saveProfile("profile")}>Save Profile</button>
             </div>
           </div>
         )}
@@ -406,7 +446,7 @@ export default function StudentDashboard({ user, onLogout }) {
                 <div className="form-field"><label>Year of Passing</label><input type="text" {...p('yearDegree')} placeholder="e.g. 2025" /></div>
               </div>
             </div>
-            <button className="save-btn" onClick={saveProfile}>Save Academic Records</button>
+            <button className="save-btn" onClick={() => saveProfile("academic")}>Save Academic Records</button>
           </div>
         )}
 
@@ -418,7 +458,7 @@ export default function StudentDashboard({ user, onLogout }) {
               <div className="form-grid">
                 <div className="form-field"><label>Aadhaar Number</label><input type="text" {...p('aadharNumber')} placeholder="XXXX XXXX XXXX" maxLength={14} /></div>
               </div>
-              <button className="save-btn" onClick={saveProfile}>Save Identification</button>
+              <button className="save-btn" onClick={() => saveProfile("identification")}>Save Identification</button>
             </div>
           </div>
         )}
@@ -442,7 +482,7 @@ export default function StudentDashboard({ user, onLogout }) {
                 <button onClick={() => { if (techInput.trim()) { setTechSkills(prev => [...prev, techInput.trim()]); setTechInput(""); } }}>Add</button>
               </div>
             </div>
-            <button className="save-btn" onClick={saveProfile}>Save Skills</button>
+            <button className="save-btn" onClick={() => saveProfile("profile")}>Save Skills</button>
           </div>
         )}
 

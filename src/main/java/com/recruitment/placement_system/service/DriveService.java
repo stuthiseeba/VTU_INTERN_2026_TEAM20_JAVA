@@ -13,6 +13,7 @@ public class DriveService {
 
     @Autowired
     private DriveRepository repository;
+   
 
     // ✅ Create Drive
     public Drive createDrive(Drive drive) {
@@ -54,4 +55,9 @@ public class DriveService {
         repository.deleteById(id);
         return "Drive deleted successfully";
     }
+    public Drive updateDriveStatus(int id, String status) {
+    Drive drive = repository.findById(id).orElseThrow();
+    drive.setStatus(status);
+    return repository.save(drive);
+}
 }

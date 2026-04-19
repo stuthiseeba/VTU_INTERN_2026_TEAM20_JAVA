@@ -61,10 +61,14 @@ function ContentSection({ type, coordUserId }) {
 export default function CoordinatorDashboard({ user, onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const [errorMessage, setErrorMessage] = useState("");
+const [selectedStudent, setSelectedStudent] = useState(null);
   const [students, setStudents] = useState([]);
 
   const pathParts = location.pathname.split('/');
   const activeTab = pathParts[2] || 'overview';
+
+  useEffect(() => { if (errorMessage) { setTimeout(() => setErrorMessage(""), 3000); } }, [errorMessage])
 
   useEffect(() => {
     if (location.pathname === '/coordinator' || location.pathname === '/coordinator/') {
@@ -83,21 +87,27 @@ export default function CoordinatorDashboard({ user, onLogout }) {
   }
 
   async function deleteStudent(id) {
-    if (!confirm("Are you sure you want to delete this student?")) return;
+    if (!window.confirm("Are you sure you want to delete this student?")) return;
     try {
       const res = await fetch(`http://localhost:8080/api/auth/students/${id}`, { method: "DELETE" });
       if (res.ok) loadStudents();
-      else alert("Failed to delete student.");
-    } catch { alert("Cannot connect to server."); }
+      else setErrorMessage("❌ Failed to delete student.");
+    } catch { setErrorMessage("❌ Cannot connect to server."); }
   }
 
   async function viewProfile(userId) {
     try {
       const res = await fetch(`http://localhost:8080/api/student/profile/${userId}`);
       const d = await res.json();
-      if (!d.userId) { alert("This student has not filled their profile yet."); return; }
-      alert(`Student Profile:\n\nPhone: ${d.phone || '-'}\nLinkedIn: ${d.linkedin || '-'}\nAddress: ${d.address || '-'}\nCGPA: ${d.cgpa || '-'}\nDepartment: ${d.department || '-'}\nCollege: ${d.college || '-'}\n10th: ${d.score10 || '-'} (${d.year10 || '-'})\n12th: ${d.score12 || '-'} (${d.year12 || '-'})\nDegree: ${d.degreeName || '-'} - ${d.specialization || '-'}\nSoft Skills: ${d.softSkills || '-'}\nTech Skills: ${d.techSkills || '-'}`);
-    } catch { alert("Cannot connect to server."); }
+      if (!d.userId) {
+  setErrorMessage("⚠️ This student has not filled their profile yet.");
+  return;
+}
+
+setSelectedStudent(d);
+    } catch {
+  setErrorMessage("❌ Cannot connect to server.");
+}
   }
 
   const navItems = [
@@ -109,6 +119,105 @@ export default function CoordinatorDashboard({ user, onLogout }) {
 
   return (
     <div className="dash-layout">
+      {errorMessage && (
+  <div style={{
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    background: "#f8d7da",
+    color: "#721c24",
+    padding: "20px",
+    borderRadius: "10px",
+    zIndex: 9999
+  }}>
+    {errorMessage}
+  </div>
+)}
+{selectedStudent && (
+  <div style={{
+    position: "fixed",
+    top: 0,
+    left: 0,
+    width: "100%",
+    height: "100%",
+    backdropFilter: "blur(8px)",
+    background: "rgba(0,0,0,0.5)",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 9999
+  }}>
+    <div style={{
+      background: "linear-gradient(135deg, #ffffff, #f8f9ff)",
+      borderRadius: "18px",
+      width: "500px",
+      maxHeight: "85vh",
+      overflowY: "auto",
+      padding: "25px 30px",
+      boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
+      animation: "popupScale 0.3s ease"
+    }}>
+
+      {/* HEADER */}
+      <div style={{
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        marginBottom: "20px",
+        borderBottom: "2px solid #eee",
+        paddingBottom: "10px"
+      }}>
+        <h2 style={{
+          margin: 0,
+          fontSize: "22px",
+          color: "#2c3e50"
+        }}>
+          👤 Student Profile
+        </h2>
+
+        <span
+          onClick={() => setSelectedStudent(null)}
+          style={{
+            cursor: "pointer",
+            fontSize: "20px",
+            fontWeight: "bold",
+            color: "#999",
+            transition: "0.2s"
+          }}
+        >
+          ✖
+        </span>
+      </div>
+
+      {/* CONTACT */}
+      <div style={{ marginBottom: "18px" }}>
+        <h4 style={{ color: "#6c5ce7", marginBottom: "6px" }}>📞 Contact</h4>
+        <p><b>Phone:</b> {selectedStudent.phone || "-"}</p>
+        <p><b>LinkedIn:</b> {selectedStudent.linkedin || "-"}</p>
+        <p><b>Address:</b> {selectedStudent.address || "-"}</p>
+      </div>
+
+      {/* ACADEMIC */}
+      <div style={{ marginBottom: "18px" }}>
+        <h4 style={{ color: "#00b894", marginBottom: "6px" }}>🎓 Academic</h4>
+        <p><b>CGPA:</b> {selectedStudent.cgpa || "-"}</p>
+        <p><b>Department:</b> {selectedStudent.department || "-"}</p>
+        <p><b>College:</b> {selectedStudent.college || "-"}</p>
+        <p><b>10th:</b> {selectedStudent.score10 || "-"} ({selectedStudent.year10 || "-"})</p>
+        <p><b>12th:</b> {selectedStudent.score12 || "-"} ({selectedStudent.year12 || "-"})</p>
+      </div>
+
+      {/* SKILLS */}
+      <div>
+        <h4 style={{ color: "#fd79a8", marginBottom: "6px" }}>💼 Skills</h4>
+        <p><b>Soft:</b> {selectedStudent.softSkills || "-"}</p>
+        <p><b>Tech:</b> {selectedStudent.techSkills || "-"}</p>
+      </div>
+
+    </div>
+  </div>
+)}
       <div className="dash-sidebar">
         <div className="s-logo">Placement<span>Portal</span></div>
         <div className="s-user">

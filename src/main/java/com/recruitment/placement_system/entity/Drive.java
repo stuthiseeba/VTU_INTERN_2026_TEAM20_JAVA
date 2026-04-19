@@ -13,6 +13,7 @@ public class Drive {
     private String role;
     private double packageAmount;
     private String location;
+    private String status;
 
     // ✅ NEW: Eligibility Criteria Fields
     private float minCgpa;                // Minimum CGPA required e.g. 7.5
@@ -46,6 +47,11 @@ public class Drive {
     public int getGraduationYear() { return graduationYear; }
     public void setGraduationYear(int graduationYear) { this.graduationYear = graduationYear; }
 
+    public String getStatus() {return status;}
+    public void setStatus(String status) {this.status = status;}
+
     public String getRequiredSkills() { return requiredSkills; }
     public void setRequiredSkills(String requiredSkills) { this.requiredSkills = requiredSkills; }
+
+    
 }

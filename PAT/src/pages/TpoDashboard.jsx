@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-
 const DEPARTMENTS = ["CSE", "ISE", "ECE", "EEE", "MECH", "CIVIL", "AIML", "DS"];
 const PROCESS_ROUNDS = ["Aptitude Test", "Coding Round", "Technical Interview", "Managerial Interview", "HR Interview", "Group Discussion"];
 
@@ -16,9 +15,27 @@ function latestStudents(studentRows) {
 }
 
 export default function TpoDashboard({ user, onLogout }) {
+  const [successMessage, setSuccessMessage] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
   const [drives, setDrives] = useState([]);
+  async function toggleDriveStatus(id, currentStatus) {
+  const newStatus = currentStatus === "Open" ? "Closed" : "Open";
+
+  try {
+    const res = await fetch(`http://localhost:8080/drives/${id}/status?status=${newStatus}`, {
+      method: "PUT"
+    });
+
+    if (res.ok) {
+      loadDrives(); // refresh UI
+    } else {
+      console.log("Failed to update");
+    }
+  } catch (e) {
+    console.log(e);
+  }
+}
   const [funnelDriveId, setFunnelDriveId] = useState(null);
   const [applications, setApplications] = useState([]);
 
@@ -33,7 +50,27 @@ export default function TpoDashboard({ user, onLogout }) {
 
   const pathParts = location.pathname.split('/');
   const activeTab = pathParts[2] || 'overview';
+  async function toggleDriveStatus(id, currentStatus) {
+  const newStatus = currentStatus === "Open" ? "Closed" : "Open";
 
+  try {
+    const res = await fetch(`http://localhost:8080/drives/${id}/status`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(newStatus)
+    });
+
+    if (res.ok) {
+      loadDrives();
+    } else {
+      setErrorMessage("❌ Failed to update status");
+    }
+  } catch {
+    setErrorMessage("❌ Cannot connect to server");
+  }
+}
   useEffect(() => {
     if (location.pathname === '/tpo' || location.pathname === '/tpo/') {
       navigate('/tpo/overview', { replace: true });
@@ -65,6 +102,11 @@ export default function TpoDashboard({ user, onLogout }) {
       setDrives(loaded);
     } catch { }
   }
+  useEffect(() => {
+  if (successMessage) {
+    setTimeout(() => setSuccessMessage(""), 3000);
+  }
+}, [successMessage]);
 
   async function loadApplications(driveId) {
     try {
@@ -80,7 +122,10 @@ export default function TpoDashboard({ user, onLogout }) {
   }
 
   async function addDrive() {
-    if (!form.company || !form.driveDate) { alert("Company name and date are required."); return; }
+    if (!form.company || !form.driveDate) {
+  setSuccessMessage("⚠️ Company name and date are required.");
+  return;
+}
     try {
       const res = await fetch("http://localhost:8080/api/tpo/drive", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -100,8 +145,8 @@ export default function TpoDashboard({ user, onLogout }) {
         status: 'Open', numberOfPositions: '', autoShortlist: false, sendEmailAlert: false
       });
       await loadDrives();
-      alert("Drive added successfully!");
-    } catch { alert("Cannot connect to server."); }
+      setSuccessMessage("Drive added successfully!");
+    } catch { setSuccessMessage("Cannot connect to server."); }
   }
 
   async function removeDrive(idx) {
@@ -117,7 +162,7 @@ export default function TpoDashboard({ user, onLogout }) {
       }
       setApplications(prev => prev.filter(app => app.driveId !== d.id));
       await loadDrives();
-    } catch { alert("Failed to delete drive."); }
+    } catch { setSuccessMessage("Failed to delete drive."); }
   }
 
   async function advanceStudent(studentId) {
@@ -128,7 +173,7 @@ export default function TpoDashboard({ user, onLogout }) {
       });
       if (!res.ok) throw new Error();
       await refreshDriveViews();
-    } catch { alert("Failed to advance student."); }
+    } catch { setSuccessMessage("Failed to advance student."); }
   }
 
   async function rejectStudent(studentId) {
@@ -139,7 +184,8 @@ export default function TpoDashboard({ user, onLogout }) {
       });
       if (!res.ok) throw new Error();
       await refreshDriveViews();
-    } catch { alert("Failed to update student status."); }
+    } catch {
+       setSuccessMessage("Failed to update student status."); }
   }
 
   function openFunnel(driveId) {
@@ -213,9 +259,35 @@ export default function TpoDashboard({ user, onLogout }) {
             </div>
           </div>
         )}
+       {successMessage && (
+  <div style={{
+    position: "fixed",
+    top: "50%",
+    left: "50%",
+    transform: "translate(-50%, -50%)",
+    background: successMessage.includes("⚠️") || successMessage.includes("❌")
+      ? "#f8d7da"
+      : "#d4edda",
+    color: successMessage.includes("⚠️") || successMessage.includes("❌")
+      ? "#721c24"
+      : "#155724",
+    padding: "20px 30px",
+    borderRadius: "10px",
+    fontSize: "18px",
+    fontWeight: "bold",
+    boxShadow: "0 8px 20px rgba(0,0,0,0.2)",
+    zIndex: 9999,
+    textAlign: "center",
+    minWidth: "300px",
+    animation: "fadeIn 0.3s ease"
+  }}>
+    {successMessage}
+  </div>
+)}
 
         {activeTab === 'schedule' && (
           <div>
+        
             <div className="dash-topbar"><div><h1>Add Drives</h1><p>Create and Schedule placement drives</p></div></div>
 
             <div className="add-content-form" style={{ padding: '20px', borderRadius: '10px', marginBottom: '30px' }}>
@@ -350,9 +422,28 @@ export default function TpoDashboard({ user, onLogout }) {
                     <p>📅 {d.date} • {d.students.length} applicants • Status: <span style={{ fontWeight: 'bold', color: d.status === 'Closed' ? 'red' : 'green' }}>{d.status}</span></p>
                   </div>
                   <div className="ci-actions">
-                    <button className="action-btn btn-view" onClick={() => openFunnel(d.id)}>View Funnel</button>
-                    <button className="action-btn btn-delete" onClick={() => removeDrive(i)}>Delete</button>
-                  </div>
+  <button
+    onClick={() => toggleDriveStatus(d.driveId, d.status)}
+    style={{
+      background: d.status === "Open" ? "#e74c3c" : "#2ecc71",
+      color: "#fff",
+      padding: "6px 12px",
+      borderRadius: "6px",
+      border: "none",
+      cursor: "pointer"
+    }}
+  >
+    {d.status === "Open" ? "Close Drive" : "Reopen"}
+  </button>
+
+  <button className="action-btn btn-view" onClick={() => openFunnel(d.driveId)}>
+    View Funnel
+  </button>
+
+  <button className="action-btn btn-delete" onClick={() => removeDrive(i)}>
+    Delete
+  </button>
+</div>
                 </div>
               ))}
             </div>
@@ -370,7 +461,27 @@ export default function TpoDashboard({ user, onLogout }) {
                     <div className="content-item" key={i}>
                       <div className="ci-text">
                         <h4>{d.company} — {d.role}</h4>
-                        <p>📅 {d.date} • {d.students.length} applicants • Status: <span style={{ fontWeight: 'bold', color: d.status === 'Closed' ? 'red' : 'green' }}>{d.status}</span></p>
+                        <p>
+  📅 {d.date} • {d.students.length} applicants • Status:
+  <span style={{ fontWeight: 'bold', color: d.status === 'Closed' ? 'red' : 'green', marginRight: "10px" }}>
+    {d.status}
+  </span>
+
+  <button
+    onClick={() => toggleDriveStatus(d.driveId, d.status)}
+    style={{
+      background: d.status === "Open" ? "#e74c3c" : "#2ecc71",
+      color: "#fff",
+      padding: "4px 10px",
+      borderRadius: "6px",
+      border: "none",
+      cursor: "pointer",
+      fontSize: "12px"
+    }}
+  >
+    {d.status === "Open" ? "Close" : "Reopen"}
+  </button>
+</p>
                       </div>
                       <div className="ci-actions">
                         <button className="action-btn btn-view" onClick={() => openFunnel(d.id)}>View Funnel</button>
@@ -407,9 +518,15 @@ export default function TpoDashboard({ user, onLogout }) {
                                 <td>{s.name}</td>
                                 <td>{s.email}</td>
                                 <td>{driveRounds.length > 0 ? driveRounds[index] || "Completed" : "No Rounds"}</td>
-                                <td><span className={`badge badge-${s.status.toLowerCase()}`}>{s.status}</span></td>
                                 <td>
-                                  <button className="action-btn btn-verify" onClick={() => advanceStudent(s.id)}>Advance</button>
+  <span className={`badge badge-${s.status.toLowerCase()}`}>
+    {s.status === "Selected" ? "Recruited" : s.status}
+  </span>
+</td>
+                                <td>
+                                  <button className="action-btn btn-verify" onClick={() => advanceStudent(s.id)}>
+  Select
+</button>
                                   <button className="action-btn btn-delete" onClick={() => rejectStudent(s.id)}>Reject</button>
                                 </td>
                               </tr>
