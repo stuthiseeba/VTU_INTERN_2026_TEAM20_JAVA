@@ -26,7 +26,6 @@ export default function HomePage({ onGoToInfo, onGoToLogin, onGoToSignup }) {
               <a onClick={() => onGoToLogin('Student')}>Student</a>
               <a onClick={() => onGoToLogin('Coordinator')}>Coordinator</a>
               <a onClick={() => onGoToLogin('TPO')}>TPO</a>
-              <a onClick={() => onGoToLogin('Admin')}>Admin</a>
               {/* <a onClick={() => onGoToLogin('HR')}>HR</a> */}
             </div>
           </div>
@@ -65,11 +64,7 @@ export default function HomePage({ onGoToInfo, onGoToLogin, onGoToSignup }) {
               <p>Companies we have partnered with.</p>
             </div>
 
-            <div className="glass-card" >
-              <div className="rc-icon">📊</div>
-              <h3>Analytics</h3>
-              <p>Gain insights into placement trends and student performance in real-time.</p>
-            </div>
+
           </div>
 
         </div>
